@@ -1,6 +1,5 @@
 <script lang="ts">
   import { compressImageToBase64, validateImageFile, getBase64Size } from '$lib/utils/imageCompression';
-	import { allowedNodeEnvironmentFlags } from 'node:process';
   
   let {
     onPhotoCompressed = $bindable(),
