@@ -32,7 +32,7 @@
   <form onsubmit={handleSubmit}>
     <!-- Photo Upload -->
     <section>
-      <label class="label">Vehicle Photo *</label>
+      <label for="photo" class="label">Vehicle Photo *</label>
       <PhotoUpload bind:onPhotoCompressed={photoBase64} maxSizeKB={500} />
     </section>
 
@@ -60,7 +60,7 @@
 
     <!-- Vehicle Details -->
     <section>
-      <label for="make" class="label">Make *<label>
+      <label for="make" class="label">Make *</label>
         <input 
           id="make"
           type="text"
@@ -71,7 +71,7 @@
     </section>
 
     <section>
-      <label for="make" class="label">Model<label>
+      <label for="model" class="label">Model</label>
         <input 
           id="model"
           type="text"
@@ -81,7 +81,7 @@
     </section>
 
     <section>
-      <label for="color" class="label">Color *<label>
+      <label for="color" class="label">Color *</label>
         <input 
           id="color"
           type="text"
