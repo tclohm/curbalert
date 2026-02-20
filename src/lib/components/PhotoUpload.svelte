@@ -61,7 +61,7 @@
     }
   }
 
-  func clearPhoto() {
+  function clearPhoto() {
     previewUrl = null; 
     onPhotoCompressed = null;
     error = null;
