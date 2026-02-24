@@ -21,7 +21,7 @@ export const reports = sqliteTable('reports', {
   // details -- '72 hours', 'expired tags', 'other'
   reason: text('reason').notNull(),
   notes: text('notes'),
-  photo_url: text('photo_url'), // URL or base64
+  photo_base64: text('photo_base64'), // compressed base64 image
 
   // track status -- 'pending', 'submitted to ciy', 'resolved', 'dismissed'
   status: text('status').notNull().default('pending'),
