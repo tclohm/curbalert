@@ -8,6 +8,13 @@
       "when": 1771559279740,
       "tag": "0000_motionless_jazinda",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1771992180032,
+      "tag": "0001_plain_living_lightning",
+      "breakpoints": true
     }
   ]
 }

@@ -1,0 +1,1 @@
+ALTER TABLE `reports` RENAME COLUMN "photo_url" TO "photo_base64";
