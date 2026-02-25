@@ -136,7 +136,7 @@
   {#if manualEntry}
     <div class="form-row">
       <div class="form-group">
-        <label for="manual-make">Vehicle Make<
+        <label for="manual-make">Vehicle Make</label>
       </div>
     </div>
   {/if}
