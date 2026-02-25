@@ -55,7 +55,7 @@
 		"wrangler": "^4.63.0"
 	},
 	"dependencies": {
-		"@tclohm/iadb": "^1.0.2",
+		"@tclohm/iadb": "^1.0.3",
 		"better-sqlite3": "^12.6.2"
 	}
 }
