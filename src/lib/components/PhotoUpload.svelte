@@ -72,7 +72,7 @@
 <div class="photo-upload">
   <!-- Upload Button -->
   {#if !previewUrl}
-    <label fro ="photo-input" class="upload-button">
+    <label for ="photo-input" class="upload-button">
       <svg
 				xmlns="http://www.w3.org/2000/svg"
 				fill="none"
