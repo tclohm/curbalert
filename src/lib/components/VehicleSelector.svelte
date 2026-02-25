@@ -126,3 +126,139 @@
     }, 200);
   }
 </script>
+
+<div class="vehicle-selector">
+  <!-- Manual Entry Toggle -->
+  <label class="manual-toggle">
+    <input type="checkbox" bind:checked={manualEntry} onChange={toggleManualEntry} />
+    <span>Can't fund your vehicle? Enter manually</span>
+  </label>
+  {#if manualEntry}
+    <div class="form-row">
+      <div class="form-group">
+        <label for="manual-make">Vehicle Make<
+      </div>
+    </div>
+  {/if}
+</div>
+
+<style>
+  .vehicle-selector {
+    width: 100%;
+  }
+
+  .manual-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    font-size: 0.875rem;
+    color: #6b7280;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .manual-toggle input[type="checkbox"] {
+    cursor: pointer;
+  }
+
+  .manual-toggle:hover span {
+    color: #3b82f6;
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .autocomplete-container {
+    position: relative;
+  }
+
+  label {
+    font-weight: 500;
+    color: #374151;
+    font-size: 0.875rem;
+  }
+
+  .input-wrapper {
+    position: relative;
+  }
+
+  input {
+    width: 100%;
+    padding: 0.75rem;
+    padding-right: 2.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    font-size: 1rem;
+    transition: all 0.2s;
+  }
+
+  input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  input:disabled {
+    background-color: #f3f4f6;
+    cursor: not-allowed;
+    color: #9ca3af;
+  }
+
+  .search-icon {
+    position: absolute;
+    right: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1.25rem;
+    height: 1.25rem;
+    color: #9ca3af;
+    pointer-events: none;
+  }
+
+  .dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-top: 0.25rem;
+    background: white;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    max-height: 240px;
+    overflow-y: auto;
+    z-index: 50;
+    list-style: none;
+    padding: 0.25rem;
+    margin: 0;
+  }
+
+  .dropdown li {
+    padding: 0.75rem;
+    cursor: pointer;
+    border-radius: 0.375rem;
+    transition: background-color 0.15s;
+  }
+
+  .dropdown li:hover,
+  .dropdown li.highlighted {
+    background-color: #eff6ff;
+    color: #3b82f6;
+  }
+
+  @media (max-width: 640px) {
+    .form-row {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
