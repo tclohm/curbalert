@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { getMakes, getModels, searchMakes } from '@tclohm/iadb';
+  import { getMakes, getModels } from '@tclohm/iadb';
   
+  // Props
   let {
     selectedMake = $bindable(),
     selectedModel = $bindable(),
@@ -9,130 +10,84 @@
     selectedModel?: string;
   } = $props();
 
-  // State
+  // Local state
   let makeQuery = $state('');
   let modelQuery = $state('');
-  let makeDropdownOpen = $state(false);
-  let modelDropdownOpen = $state(false);
-  let filteredMakes = $state<string[]>([]);
-  let filteredModels = $state<string[]>([]);
+  let showMakeDropdown = $state(false);
+  let showModelDropdown = $state(false);
   let manualEntry = $state(false);
-  let highlightedMakeIndex = $state(-1);
-  let highlightedModelIndex = $state(-1);
 
-  // Refs
-  let makeInputRef: HTMLInputElement;
-  let modelInputRef: HTMLInputElement;
+  // All available makes
+  const allMakes = getMakes();
+  
+  // Reactive filtering using $derived
+  let filteredMakes = $derived(
+    makeQuery.length > 0
+      ? allMakes.filter(m => m.toLowerCase().includes(makeQuery.toLowerCase())).slice(0, 10)
+      : []
+  );
 
-  // Update filtered makes when query changes
+  let filteredModels = $derived(
+    selectedMake && modelQuery.length > 0
+      ? getModels(selectedMake).filter(m => m.toLowerCase().includes(modelQuery.toLowerCase())).slice(0, 10)
+      : []
+  );
+
+  // Show dropdown when there are results
   $effect(() => {
-    if (makeQuery.length === 0) {
-      filteredMakes = [];
-      makeDropdownOpen = false;
-    } else {
-      filteredMakes = searchMakes(makeQuery).slice(0, 10);
-      makeDropdownOpen = filteredMakes.length > 0 && !manualEntry;
-    }
-    highlightedMakeIndex = -1;
+    showMakeDropdown = filteredMakes.length > 0 && !manualEntry;
   });
 
-  // Update filtered models when query changes
   $effect(() => {
-    if (!selectedMake || modelQuery.length === 0) {
-      filteredModels = [];
-      modelDropdownOpen = false;
-    } else {
-      const allModels = getModels(selectedMake);
-      filteredModels = allModels
-        .filter(model => model.toLowerCase().includes(modelQuery.toLowerCase()))
-        .slice(0, 10);
-      modelDropdownOpen = filteredModels.length > 0 && !manualEntry;
-    }
-    highlightedModelIndex = -1;
+    showModelDropdown = filteredModels.length > 0 && !manualEntry;
   });
 
   function selectMake(make: string) {
     selectedMake = make;
     makeQuery = make;
-    makeDropdownOpen = false;
+    showMakeDropdown = false;
+    // Reset model
     selectedModel = '';
     modelQuery = '';
-    highlightedMakeIndex = -1;
-    // Focus model input after selection
-    setTimeout(() => modelInputRef?.focus(), 0);
   }
 
   function selectModel(model: string) {
     selectedModel = model;
     modelQuery = model;
-    modelDropdownOpen = false;
-    highlightedModelIndex = -1;
+    showModelDropdown = false;
   }
 
   function handleMakeKeydown(e: KeyboardEvent) {
-    if (!makeDropdownOpen || filteredMakes.length === 0) return;
-
-    if (e.key === 'ArrowDown') {
+    if (e.key === 'Enter' && filteredMakes.length > 0) {
       e.preventDefault();
-      highlightedMakeIndex = Math.min(highlightedMakeIndex + 1, filteredMakes.length - 1);
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      highlightedMakeIndex = Math.max(highlightedMakeIndex - 1, 0);
-    } else if (e.key === 'Enter' && highlightedMakeIndex >= 0) {
-      e.preventDefault();
-      selectMake(filteredMakes[highlightedMakeIndex]);
+      selectMake(filteredMakes[0]);
     } else if (e.key === 'Escape') {
-      makeDropdownOpen = false;
+      showMakeDropdown = false;
     }
   }
 
   function handleModelKeydown(e: KeyboardEvent) {
-    if (!modelDropdownOpen || filteredModels.length === 0) return;
-
-    if (e.key === 'ArrowDown') {
+    if (e.key === 'Enter' && filteredModels.length > 0) {
       e.preventDefault();
-      highlightedModelIndex = Math.min(highlightedModelIndex + 1, filteredModels.length - 1);
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      highlightedModelIndex = Math.max(highlightedModelIndex - 1, 0);
-    } else if (e.key === 'Enter' && highlightedModelIndex >= 0) {
-      e.preventDefault();
-      selectModel(filteredModels[highlightedModelIndex]);
+      selectModel(filteredModels[0]);
     } else if (e.key === 'Escape') {
-      modelDropdownOpen = false;
+      showModelDropdown = false;
     }
   }
 
-  function toggleManualEntry() {
+  function toggleManual() {
     manualEntry = !manualEntry;
     if (manualEntry) {
-      makeDropdownOpen = false;
-      modelDropdownOpen = false;
-      selectedMake = '';
-      selectedModel = '';
-      makeQuery = '';
-      modelQuery = '';
+      showMakeDropdown = false;
+      showModelDropdown = false;
     }
-  }
-
-  function handleMakeBlur() {
-    // Delay to allow click on dropdown item
-    setTimeout(() => {
-      makeDropdownOpen = false;
-    }, 200);
-  }
-
-  function handleModelBlur() {
-    setTimeout(() => {
-      modelDropdownOpen = false;
-    }, 200);
   }
 </script>
 
 <div class="vehicle-selector">
   <!-- Manual Entry Toggle -->
   <label class="manual-toggle">
-    <input type="checkbox" bind:checked={manualEntry} onchange={toggleManualEntry} />
+    <input type="checkbox" bind:checked={manualEntry} onchange={toggleManual} />
     <span>Can't find your vehicle? Enter manually</span>
   </label>
 
@@ -140,24 +95,22 @@
     <!-- Manual Entry Mode -->
     <div class="form-row">
       <div class="form-group">
-        <label for="manual-make">Vehicle Make</label>
+        <label for="manual-make">Vehicle Make *</label>
         <input
           id="manual-make"
           type="text"
           bind:value={selectedMake}
           placeholder="e.g., Honda"
-          required
         />
       </div>
 
       <div class="form-group">
-        <label for="manual-model">Vehicle Model</label>
+        <label for="manual-model">Vehicle Model *</label>
         <input
           id="manual-model"
           type="text"
           bind:value={selectedModel}
           placeholder="e.g., Civic"
-          required
         />
       </div>
     </div>
@@ -171,36 +124,34 @@
           <input
             id="make-input"
             type="text"
-            bind:this={makeInputRef}
             bind:value={makeQuery}
             onkeydown={handleMakeKeydown}
-            onblur={handleMakeBlur}
             onfocus={() => {
-              if (makeQuery.length > 0) {
-                makeDropdownOpen = true;
-              }
+              if (filteredMakes.length > 0) showMakeDropdown = true;
+            }}
+            onblur={() => {
+              setTimeout(() => showMakeDropdown = false, 200);
             }}
             placeholder="Start typing... (e.g., Honda)"
             autocomplete="off"
-            required
           />
           <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
           </svg>
         </div>
 
-        {#if makeDropdownOpen && filteredMakes.length > 0}
-          <ul class="dropdown">
-            {#each filteredMakes as make, index}
-              <li
-                class:highlighted={index === highlightedMakeIndex}
-                onmousedown={() => selectMake(make)}
-                onmouseenter={() => highlightedMakeIndex = index}
+        {#if showMakeDropdown && filteredMakes.length > 0}
+          <div class="dropdown">
+            {#each filteredMakes as make}
+              <button
+                type="button"
+                class="dropdown-item"
+                onclick={() => selectMake(make)}
               >
                 {make}
-              </li>
+              </button>
             {/each}
-          </ul>
+          </div>
         {/if}
       </div>
 
@@ -211,37 +162,35 @@
           <input
             id="model-input"
             type="text"
-            bind:this={modelInputRef}
             bind:value={modelQuery}
             onkeydown={handleModelKeydown}
-            onblur={handleModelBlur}
             onfocus={() => {
-              if (modelQuery.length > 0) {
-                modelDropdownOpen = true;
-              }
+              if (filteredModels.length > 0) showModelDropdown = true;
+            }}
+            onblur={() => {
+              setTimeout(() => showModelDropdown = false, 200);
             }}
             placeholder={selectedMake ? 'Start typing...' : 'Select make first'}
             autocomplete="off"
             disabled={!selectedMake}
-            required
           />
           <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
           </svg>
         </div>
 
-        {#if modelDropdownOpen && filteredModels.length > 0}
-          <ul class="dropdown">
-            {#each filteredModels as model, index}
-              <li
-                class:highlighted={index === highlightedModelIndex}
-                onmousedown={() => selectModel(model)}
-                onmouseenter={() => highlightedModelIndex = index}
+        {#if showModelDropdown && filteredModels.length > 0}
+          <div class="dropdown">
+            {#each filteredModels as model}
+              <button
+                type="button"
+                class="dropdown-item"
+                onclick={() => selectModel(model)}
               >
                 {model}
-              </li>
+              </button>
             {/each}
-          </ul>
+          </div>
         {/if}
       </div>
     </div>
@@ -344,20 +293,27 @@
     max-height: 240px;
     overflow-y: auto;
     z-index: 50;
-    list-style: none;
     padding: 0.25rem;
-    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
   }
 
-  .dropdown li {
+  .dropdown-item {
+    width: 100%;
+    text-align: left;
     padding: 0.75rem;
-    cursor: pointer;
+    background: none;
+    border: none;
     border-radius: 0.375rem;
+    cursor: pointer;
     transition: background-color 0.15s;
+    font-size: 1rem;
+    font-family: inherit;
+    color: inherit;
   }
 
-  .dropdown li:hover,
-  .dropdown li.highlighted {
+  .dropdown-item:hover {
     background-color: #eff6ff;
     color: #3b82f6;
   }
