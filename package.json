@@ -56,7 +56,7 @@
 	},
 	"dependencies": {
 		"@tclohm/iadb": "^1.0.8",
-		"@tclohm/us-states": "^1.0.3",
+		"@tclohm/us-states": "^1.0.4",
 		"better-sqlite3": "^12.6.2"
 	}
 }

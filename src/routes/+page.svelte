@@ -1,7 +1,15 @@
 <script lang="ts">
+  import { getAll } from '@tclohm/us-states';
+
 	import PhotoUpload from '$lib/components/PhotoUpload.svelte';
 	import VehicleSelector from '$lib/components/VehicleSelector.svelte';
 	import SelectDropdown from '$lib/components/SelectDropdown.svelte';
+
+  // Get all us states and convert to SelectDropdown format 
+  const stateOptions = getAll().map(state => ({
+    value: state.abbr,
+    label: state.abbr
+  }));
 
 	let photoBase64 = $state<string | null>(null);
 	let selectedMake = $state('');
@@ -130,14 +138,9 @@
 				/>
 				<div class="state-select">
 					<SelectDropdown
-						options={[
-							{ value: 'CA', label: 'CA' },
-							{ value: 'AZ', label: 'AZ' },
-							{ value: 'NV', label: 'NV' },
-							{ value: 'OR', label: 'OR' },
-							{ value: 'TX', label: 'TX' }
-						]}
+						options={stateOptions}
 						bind:selected={formData.plateState}
+            placeholder="CA"
 					/>
 				</div>
 			</div>
