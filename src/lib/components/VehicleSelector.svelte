@@ -24,22 +24,24 @@
   let filteredMakes = $derived(
     makeQuery.length > 0
       ? allMakes.filter(m => m.toLowerCase().includes(makeQuery.toLowerCase())).slice(0, 10)
-      : []
+      : allMakes.slice(0, 10) // Show first 10 makes when empty
   );
 
   let filteredModels = $derived(
-    selectedMake && modelQuery.length > 0
-      ? getModels(selectedMake).filter(m => m.toLowerCase().includes(modelQuery.toLowerCase())).slice(0, 10)
+    selectedMake
+      ? modelQuery.length > 0
+        ? getModels(selectedMake).filter(m => m.toLowerCase().includes(modelQuery.toLowerCase())).slice(0, 10)
+        : getModels(selectedMake).slice(0, 10) // Show first 10 models when empty
       : []
   );
 
-  // Show dropdown when there are results
+  // Show dropdown when there are results (always true now since we show all items)
   $effect(() => {
     showMakeDropdown = filteredMakes.length > 0 && !manualEntry;
   });
 
   $effect(() => {
-    showModelDropdown = filteredModels.length > 0 && !manualEntry;
+    showModelDropdown = filteredModels.length > 0 && !manualEntry && selectedMake !== '';
   });
 
   function selectMake(make: string) {
@@ -127,7 +129,7 @@
             bind:value={makeQuery}
             onkeydown={handleMakeKeydown}
             onfocus={() => {
-              if (filteredMakes.length > 0) showMakeDropdown = true;
+              showMakeDropdown = true; // Always show on focus
             }}
             onblur={() => {
               setTimeout(() => showMakeDropdown = false, 200);
@@ -165,7 +167,7 @@
             bind:value={modelQuery}
             onkeydown={handleModelKeydown}
             onfocus={() => {
-              if (filteredModels.length > 0) showModelDropdown = true;
+              if (selectedMake) showModelDropdown = true; // Show on focus if make is selected
             }}
             onblur={() => {
               setTimeout(() => showModelDropdown = false, 200);
