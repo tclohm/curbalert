@@ -90,14 +90,6 @@
       showModelDropdown = false;
     }
   }
-
-  function toggleManual() {
-    manualEntry = !manualEntry;
-    if (manualEntry) {
-      showMakeDropdown = false;
-      showModelDropdown = false;
-    }
-  }
 </script>
 
 <div class="vehicle-selector">
