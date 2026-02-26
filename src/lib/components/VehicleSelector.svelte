@@ -16,6 +16,8 @@
   let showMakeDropdown = $state(false);
   let showModelDropdown = $state(false);
   let manualEntry = $state(false);
+  let makeInputTouched = $state(false); // Track if user has interacted
+  let modelInputTouched = $state(false);
 
   // All available makes
   const allMakes = getMakes();
@@ -37,11 +39,23 @@
 
   // Show dropdown when there are results (always true now since we show all items)
   $effect(() => {
-    showMakeDropdown = filteredMakes.length > 0 && !manualEntry;
+    // Don't show if we've already selected and the input matches the selection
+    if (selectedMake && makeQuery === selectedMake) {
+      showMakeDropdown = false;
+    } else {
+      // Only show if user has interacted with the field
+      showMakeDropdown = makeInputTouched && filteredMakes.length > 0 && !manualEntry;
+    }
   });
 
   $effect(() => {
-    showModelDropdown = filteredModels.length > 0 && !manualEntry && selectedMake !== '';
+    // Don't show if we've already selected and the input matches the selection
+    if (selectedModel && modelQuery === selectedModel) {
+      showModelDropdown = false;
+    } else {
+      // Only show if user has interacted with the field
+      showModelDropdown = modelInputTouched && filteredModels.length > 0 && !manualEntry && selectedMake !== '';
+    }
   });
 
   function selectMake(make: string) {
@@ -129,10 +143,16 @@
             bind:value={makeQuery}
             onkeydown={handleMakeKeydown}
             onfocus={() => {
-              showMakeDropdown = true; // Always show on focus
+              makeInputTouched = true; // Mark as touched
+              // Only show if we haven't selected yet or are changing selection
+              if (makeQuery !== selectedMake) {
+                showMakeDropdown = true;
+              }
             }}
             onblur={() => {
-              setTimeout(() => showMakeDropdown = false, 200);
+              setTimeout(() => {
+                showMakeDropdown = false;
+              }, 200);
             }}
             placeholder="Start typing... (e.g., Honda)"
             autocomplete="off"
@@ -167,10 +187,16 @@
             bind:value={modelQuery}
             onkeydown={handleModelKeydown}
             onfocus={() => {
-              if (selectedMake) showModelDropdown = true; // Show on focus if make is selected
+              modelInputTouched = true; // Mark as touched
+              // Only show if we have a make selected and haven't selected a model yet
+              if (selectedMake && modelQuery !== selectedModel) {
+                showModelDropdown = true;
+              }
             }}
             onblur={() => {
-              setTimeout(() => showModelDropdown = false, 200);
+              setTimeout(() => {
+                showModelDropdown = false;
+              }, 200);
             }}
             placeholder={selectedMake ? 'Start typing...' : 'Select make first'}
             autocomplete="off"
