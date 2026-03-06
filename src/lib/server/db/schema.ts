@@ -23,9 +23,10 @@ export const reports = sqliteTable('reports', {
   notes: text('notes'),
   photo_base64: text('photo_base64'), // compressed base64 image
 
-  // track status -- 'pending', 'submitted to ciy', 'resolved', 'dismissed'
+  // track status -- 'open', 'investigating', 'resolved', 'dismissed'
   status: text('status').notNull().default('pending'),
 
+  // timestamps
 	created_at: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
   updated_at: integer('updated_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
 });
