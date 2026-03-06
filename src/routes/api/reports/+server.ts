@@ -3,6 +3,35 @@ import { getDB } from '$lib/server/db';
 import { reports } from '$lib/server/db/schema';
 import type { RequestHandler } from './$type';
 
+export const GET: RequestHandler = async ({ platform }) => {
+  try {
+    const db = getDB(platform!.env);
+
+    const result = await db.prepare(`
+      SELECT
+        id,
+        vehicle_make as vehicleMake,
+        vehicle_model as vehicleModel,
+        vehicle_color as vehicleColor,
+        license_plate as licensePlate,
+        plate_state as plateState,
+        address,
+        reason,
+        notes,
+        status,
+        created_at as createdAt,
+        updated_at as updatedAt 
+      FROM reports 
+      ORDER BY created_at DESC
+    `).all();
+
+    return json({ reports: result.results || [] }); 
+  } catch (error) {
+    console.error('Error fetching reports:', error);
+    return json({ error: 'Failed to fetch reports' }, { status: 500 });
+  }
+};
+
 export const POST: RequestHandler = async ({ request, platform }) => {
   try {
     const body = await request.json();
@@ -28,7 +57,7 @@ export const POST: RequestHandler = async ({ request, platform }) => {
 			reason: body.reason,
 			notes: body.notes || null,
 			photo_url: body.photoBase64 || null, // Store base64 in photo_url field
-			status: 'pending'
+			status: 'open',
     }).returning();
 
     return json({ success: true, report: newReport[0] }, { status: 201 });
