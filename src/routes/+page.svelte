@@ -17,6 +17,7 @@
 	let isSubmitting = $state(false);
 	let submitError = $state<string | null>(null);
 	let submitSuccess = $state(false);
+  let isGettingLocation = $state(false);
 
 	let formData = $state({
 		reporterEmail: '',
@@ -24,8 +25,61 @@
 		plateState: 'CA',
 		vehicleColor: '',
 		reason: '72_hours',
-		notes: ''
+		notes: '', 
+    address: '',
+    latitude: null as number | null,
+    longitude: null as number | null
 	});
+
+  async function getCurrentLocation() {
+    if (!navigator.geolocation) {
+      submitError = 'Geolocation is not supported by your browser';
+      return;
+    }
+
+    isGettingLocation = true;
+    submitError = null;
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        formData.latitude = position.coords.latitude;
+        formData.longitude = position.coords.longitude;
+
+        // Reverse geocode to get address 
+        try {
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${formData.latitude}&lon=${formData.longitude}&format=json`
+          );
+          const data = await response.json();
+
+          if (data.display_name) {
+            formData.address = data.display_name;
+          }
+        } catch (error) {
+          console.error('Reverse geocoding failed:', error);
+          formData.address = `${formData.latitude}, ${formData.longitude}`;
+        }
+
+        isGettingLocation = false;
+      },
+      (error) => {
+        isGettingLocation = false;
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+						submitError = 'Location permission denied. Please enter address manually.';
+						break;
+					case error.POSITION_UNAVAILABLE:
+						submitError = 'Location unavailable. Please enter address manually.';
+						break;
+					case error.TIMEOUT:
+						submitError = 'Location request timed out. Please enter address manually.';
+						break;
+					default:
+						submitError = 'Could not get location. Please enter address manually.';        
+        }
+      }
+    );
+  }
 
 	async function handleSubmit(event: Event) {
 		event.preventDefault();
@@ -41,6 +95,11 @@
 			submitError = 'Please select vehicle make and model';
 			return;
 		}
+
+    if (!formData.address) {
+      submitError = 'Please enter the vehicle location';
+      return;
+    }
 
 		isSubmitting = true;
 
@@ -71,7 +130,10 @@
 				plateState: 'CA',
 				vehicleColor: '',
 				reason: '72_hours',
-				notes: ''
+				notes: '',
+        address: '',
+        latitude: null,
+        longitude: null
 			};
 			photoBase64 = null;
 			selectedMake = '';
@@ -111,6 +173,37 @@
 		<section>
 			<VehicleSelector bind:selectedMake bind:selectedModel />
 		</section>
+
+    <!-- Location -->
+    <section>
+      <label for="address" class="label">Vehicle Location *</label>
+        <div class="location-container">
+				  <button 
+					  type="button" 
+					  class="location-button"
+					  onclick={getCurrentLocation}
+					  disabled={isGettingLocation}
+				  >
+					  {#if isGettingLocation}
+						  <span class="spinner"></span>
+						  Getting location...
+					  {:else}
+						  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="location-icon">
+							  <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+							  <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
+						  </svg>
+						  Use Current Location
+					  {/if}
+				  </button>
+				<input
+					id="address"
+					type="text"
+					bind:value={formData.address}
+					placeholder="Or enter address manually"
+					required
+				/>
+			</div>
+    </section>
 
 		<!-- Email -->
 		<section>
@@ -254,6 +347,56 @@
 		outline: none;
 		border-color: #3b82f6;
 		box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+	}
+
+  .location-container {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+
+	.location-button {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.5rem;
+		padding: 0.75rem;
+		background-color: #f3f4f6;
+		border: 1px solid #d1d5db;
+		border-radius: 0.5rem;
+		cursor: pointer;
+		transition: all 0.2s;
+		font-size: 0.875rem;
+		font-weight: 500;
+		color: #374151;
+	}
+
+	.location-button:hover:not(:disabled) {
+		background-color: #e5e7eb;
+		border-color: #9ca3af;
+	}
+
+	.location-button:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	.location-icon {
+		width: 1.25rem;
+		height: 1.25rem;
+	}
+
+	.spinner {
+		width: 1rem;
+		height: 1rem;
+		border: 2px solid #d1d5db;
+		border-top-color: #3b82f6;
+		border-radius: 50%;
+		animation: spin 0.6s linear infinite;
+	}
+
+	@keyframes spin {
+		to { transform: rotate(360deg); }
 	}
 
 	.plate-row {
