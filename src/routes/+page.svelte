@@ -4,6 +4,7 @@
 	import PhotoUpload from '$lib/components/PhotoUpload.svelte';
 	import VehicleSelector from '$lib/components/VehicleSelector.svelte';
 	import SelectDropdown from '$lib/components/SelectDropdown.svelte';
+  import ColorSelector from '$lib/components/ColorSelector.svelte';
 
   // Get all us states and convert to SelectDropdown format 
   const stateOptions = getAll().map(state => ({
@@ -14,6 +15,7 @@
 	let photoBase64 = $state<string | null>(null);
 	let selectedMake = $state('');
 	let selectedModel = $state('');
+  let selectedColor = $state('');
 	let isSubmitting = $state(false);
 	let submitError = $state<string | null>(null);
 	let submitSuccess = $state(false);
@@ -96,6 +98,11 @@
 			return;
 		}
 
+    if (!selectedColor) {
+      submitError = 'Please select vehicle color';
+      return;
+    }
+
     if (!formData.address) {
       submitError = 'Please enter the vehicle location';
       return;
@@ -111,6 +118,7 @@
 					...formData,
 					vehicleMake: selectedMake,
 					vehicleModel: selectedModel,
+          vehicleColor: selectedColor,
 					photoBase64
 				})
 			});
@@ -137,7 +145,8 @@
 			};
 			photoBase64 = null;
 			selectedMake = '';
-			selectedModel = '';
+			selectedModel = ''; 
+      selectedColor = '';
 		} catch (error) {
 			submitError = error instanceof Error ? error.message : 'Failed to submit report';
 		} finally {
@@ -173,6 +182,11 @@
 		<section>
 			<VehicleSelector bind:selectedMake bind:selectedModel />
 		</section>
+
+    <!-- Color Selector -->
+    <section>
+      <ColorSelector bind:selectedColor />
+    </section>
 
     <!-- Location -->
     <section>
