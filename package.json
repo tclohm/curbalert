@@ -55,6 +55,7 @@
 		"wrangler": "^4.63.0"
 	},
 	"dependencies": {
+		"@tclohm/car-colors": "^1.0.1",
 		"@tclohm/iadb": "^1.0.8",
 		"@tclohm/us-states": "^1.0.4",
 		"better-sqlite3": "^12.6.2"
