@@ -70,7 +70,7 @@
   </button>
 
   {#if isOpen && !disabled}
-    <div class="dropdown" onkeydown={handleKeydown}>
+    <div class="dropdown" role="listbox" onkeydown={handleKeydown}>
       {#each options as option}
         <button
           type="button"
