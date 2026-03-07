@@ -219,18 +219,6 @@
 			</div>
     </section>
 
-		<!-- Email -->
-		<section>
-			<label for="email" class="label">Your Email *</label>
-			<input
-				id="email"
-				type="email"
-				bind:value={formData.reporterEmail}
-				required
-				placeholder="you@example.com"
-			/>
-		</section>
-
 		<!-- License Plate -->
 		<section>
 			<label for="plate" class="label">License Plate *</label>
@@ -251,18 +239,6 @@
 					/>
 				</div>
 			</div>
-		</section>
-
-		<!-- Vehicle Color -->
-		<section>
-			<label for="color" class="label">Color *</label>
-			<input
-				id="color"
-				type="text"
-				bind:value={formData.vehicleColor}
-				required
-				placeholder="Silver"
-			/>
 		</section>
 
 		<!-- Reason -->
@@ -286,6 +262,18 @@
 				bind:value={formData.notes}
 				placeholder="Any additional details..."
 				rows="3"
+			/>
+		</section>
+
+		<!-- Email -->
+		<section>
+			<label for="email" class="label">Your Email *</label>
+			<input
+				id="email"
+				type="email"
+				bind:value={formData.reporterEmail}
+				required
+				placeholder="you@example.com"
 			/>
 		</section>
 

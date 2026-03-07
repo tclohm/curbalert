@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getColors } from '@tclohm/car-colors';
+  import { allColors, searchByName } from '@tclohm/car-colors';
   
   let {
     selectedColor = $bindable(),
@@ -12,13 +12,15 @@
   let showColorDropdown = $state(false);
   let colorInputTouched = $state(false);
 
-  // All available colors
-  const allColors = getColors();
-  
+  // Get the selected color object for hex value
+  let selectedColorObj = $derived(
+    selectedColor ? allColors.find(c => c.name === selectedColor) : null
+  );
+
   // Reactive filtering using $derived
   let filteredColors = $derived(
     colorQuery.length > 0
-      ? allColors.filter(c => c.toLowerCase().includes(colorQuery.toLowerCase())).slice(0, 10)
+      ? searchByName(colorQuery).slice(0, 10)
       : allColors.slice(0, 10) // Show first 10 colors when empty
   );
 
@@ -33,16 +35,16 @@
     }
   });
 
-  function selectColor(color: string) {
-    selectedColor = color;
-    colorQuery = color;
+  function selectColor(colorName: string) {
+    selectedColor = colorName;
+    colorQuery = colorName;
     showColorDropdown = false;
   }
 
   function handleColorKeydown(e: KeyboardEvent) {
     if (e.key === 'Enter' && filteredColors.length > 0) {
       e.preventDefault();
-      selectColor(filteredColors[0]);
+      selectColor(filteredColors[0].name);
     } else if (e.key === 'Escape') {
       showColorDropdown = false;
     }
@@ -53,9 +55,13 @@
   <div class="form-group autocomplete-container">
     <label for="color-input">Color *</label>
     <div class="input-wrapper">
+      {#if selectedColorObj}
+        <span class="color-preview" style="background-color: {selectedColorObj.hex}"></span>
+      {/if}
       <input
         id="color-input"
         type="text"
+        class:has-color={selectedColorObj !== null}
         bind:value={colorQuery}
         onkeydown={handleColorKeydown}
         onfocus={() => {
@@ -84,9 +90,10 @@
           <button
             type="button"
             class="dropdown-item"
-            onclick={() => selectColor(color)}
+            onclick={() => selectColor(color.name)}
           >
-            {color}
+            <span class="color-swatch" style="background-color: {color.hex}"></span>
+            {color.name}
           </button>
         {/each}
       </div>
@@ -119,6 +126,18 @@
     position: relative;
   }
 
+  .color-preview {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1.25rem;
+    height: 1.25rem;
+    border-radius: 0.25rem;
+    border: 1px solid #d1d5db;
+    pointer-events: none;
+  }
+
   input {
     width: 100%;
     padding: 0.75rem;
@@ -127,6 +146,10 @@
     border-radius: 0.5rem;
     font-size: 1rem;
     transition: all 0.2s;
+  }
+
+  input.has-color {
+    padding-left: 2.5rem;
   }
 
   input:focus {
@@ -177,10 +200,21 @@
     font-size: 1rem;
     font-family: inherit;
     color: inherit;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
   }
 
   .dropdown-item:hover {
     background-color: #eff6ff;
     color: #3b82f6;
+  }
+
+  .color-swatch {
+    width: 1.25rem;
+    height: 1.25rem;
+    border-radius: 0.25rem;
+    border: 1px solid #d1d5db;
+    flex-shrink: 0;
   }
 </style>
