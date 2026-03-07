@@ -5,7 +5,11 @@ import type { RequestHandler } from './$type';
 
 export const GET: RequestHandler = async ({ platform }) => {
   try {
-    const db = getDB(platform!.env);
+    const db = platform?.env?.DB;
+
+    if (!db) { 
+      return json({ error: 'Database not available' }, { status: 500 });
+    }
 
     const result = await db.prepare(`
       SELECT
