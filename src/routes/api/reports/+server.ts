@@ -12,7 +12,7 @@ export const GET: RequestHandler = async ({ platform }) => {
 		const allReports = await db
 			.select()
 			.from(reports)
-			.orderBy(desc(reports.createdAt));
+			.orderBy(desc(reports.created_at));
 
 		// Add report count to each report manually
 		// (We'll calculate it for each unique plate+state combination)
@@ -23,8 +23,8 @@ export const GET: RequestHandler = async ({ platform }) => {
 					.from(reports)
 					.where(
 						and(
-							eq(reports.licensePlate, report.licensePlate),
-							eq(reports.plateState, report.plateState)
+							eq(reports.license_plate, report.license_plate),
+							eq(reports.plate_state, report.plate_state)
 						)
 					);
 
@@ -72,15 +72,15 @@ export const POST: RequestHandler = async ({ request, platform }) => {
 		const duplicateReports = await db
 			.select({
 				id: reports.id,
-				createdAt: reports.createdAt
+				createdAt: reports.created_at
 			})
 			.from(reports)
 			.where(
 				and(
-					eq(reports.reporterEmail, data.reporterEmail),
-					eq(reports.licensePlate, data.licensePlate.toUpperCase()),
-					eq(reports.plateState, data.plateState),
-					gt(reports.createdAt, seventyTwoHoursAgo)
+					eq(reports.reporter_email, data.reporterEmail),
+					eq(reports.license_plate, data.licensePlate.toUpperCase()),
+					eq(reports.plate_state, data.plateState),
+					gt(reports.created_at, new Date(seventyTwoHoursAgo * 1000))
 				)
 			)
 			.limit(1);
@@ -96,22 +96,22 @@ export const POST: RequestHandler = async ({ request, platform }) => {
 
 		// Insert the report using Drizzle
 		const result = await db.insert(reports).values({
-			reporterEmail: data.reporterEmail,
-			vehicleMake: data.vehicleMake,
-			vehicleModel: data.vehicleModel,
-			vehicleColor: data.vehicleColor,
-			licensePlate: data.licensePlate.toUpperCase(),
-			plateState: data.plateState,
-			address: data.address,
-			latitude: data.latitude ? String(data.latitude) : null,
-			longitude: data.longitude ? String(data.longitude) : null,
-			reason: data.reason,
-			notes: data.notes || null,
-			photoBase64: data.photoBase64,
-			status: 'open',
-			createdAt: now,
-			updatedAt: now
-		}).returning({ id: reports.id });
+      reporter_email: data.reporterEmail,
+      vehicle_make: data.vehicleMake,
+      vehicle_model: data.vehicleModel,
+      vehicle_color: data.vehicleColor,
+      license_plate: data.licensePlate.toUpperCase(),
+      plate_state: data.plateState,
+      address: data.address,
+      latitude: data.latitude ?? null,
+      longitude: data.longitude ?? null,
+      reason: data.reason,
+      notes: data.notes || null,
+      photo_base64: data.photoBase64,
+      status: 'open',
+      created_at: new Date(now * 1000),
+      updated_at: new Date(now * 1000)
+    }).returning({ id: reports.id });
 
 		return json({ 
 			success: true,
