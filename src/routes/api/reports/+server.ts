@@ -4,11 +4,11 @@ import { drizzle } from 'drizzle-orm/d1';
 import { reports } from '$lib/server/db/schema';
 import { eq, and, gt, sql, desc } from 'drizzle-orm';
 
-export const GET: RequestHandler = async ({ platform }) => {
+export const GET: RequestHandler = async ({ platform, url }) => {
 	try {
 		const db = drizzle(platform?.env?.DB);
-    const page = Number(url.searchParmas.get('page') ?? '1');
-    const limit = Number(url.searchParmas.get('limit') ?? '20');
+    const page = Number(url.searchParams.get('page') ?? '1');
+    const limit = Number(url.searchParams.get('limit') ?? '20');
     const offset = (page - 1) * limit;
 
     const totalResults = await db
@@ -25,12 +25,6 @@ export const GET: RequestHandler = async ({ platform }) => {
 			.orderBy(desc(reports.created_at))
       .limit(limit)
       .offset(offset);
-
-		return {
-			...report,
-				};
-		})
-	);
 
 		return json({ reports: allReports, total, page, totalPages });
 	} catch (error) {

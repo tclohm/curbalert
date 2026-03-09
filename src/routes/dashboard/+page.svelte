@@ -24,6 +24,31 @@
 	let searchQuery = $state('');
 	let statusFilter = $state<'all' | 'open' | 'investigating' | 'closed'>('all');
 
+  // Pagination state 
+  let currentPage = $state(1);
+  let totalPages = $state(1);
+  let total = $state(0);
+  const LIMIT = 20;
+
+  async function loadReports(page = 1) {
+    loading = true;
+    error = null; 
+
+    try {
+      const response = await fetch(`/api/reports?page=${page}&limit=${LIMIT}`);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to load reports');
+      reports = data.reports; 
+      total = data.total;
+      totalPages = data.totalPages;
+      currentPage = data.page;
+    } catch (err) {
+      error = err instanceof Error ? err.message : 'Failed to load';
+    } finally {
+      loading = false;
+    }
+  }
+
 	// Filtered reports
 	let filteredReports = $derived(
 		reports.filter(report => {
@@ -48,22 +73,11 @@
 		})
 	);
 
-	onMount(async () => {
-		try {
-			const response = await fetch('/api/reports');
-			const data = await response.json();
+	onMount(() => loadReports(1));
 
-			if (!response.ok) {
-				throw new Error(data.error || 'Failed to load reports');
-			}
-
-			reports = data.reports;
-		} catch (err) {
-			error = err instanceof Error ? err.message : 'Failed to load reports';
-		} finally {
-			loading = false;
-		}
-	});
+  let pageNumbers = $derived( 
+    Array.from({ length: totalPages }, (_, i) => i + 1)
+  );
 
 	function getStatusColor(status: string) {
 		switch (status) {
@@ -213,8 +227,38 @@
 			</table>
 		</div>
 
+    {#if totalPages > 1}
+      <div class="pagination">
+        <button
+            class="page-btn"
+            disabled={currentPage === 1}
+            onclick={() => loadReports(currentPage - 1)}
+        >
+            ← Prev
+        </button>
+
+        {#each pageNumbers as n}
+            <button
+                class="page-btn"
+                class:active={n === currentPage}
+                onclick={() => loadReports(n)}
+            >
+                {n}
+            </button>
+        {/each}
+
+        <button
+            class="page-btn"
+            disabled={currentPage === totalPages}
+            onclick={() => loadReports(currentPage + 1)}
+        >
+            Next →
+        </button>
+      </div>
+    {/if}
+
 		<div class="results-count">
-			Showing {filteredReports.length} of {reports.length} reports
+			Showing {(currentPage - 1) * LIMIT + 1}-{Math.min(currentPage * LIMIT, total)} of {total} reports
 		</div>
 	{/if}
 </div>
@@ -454,6 +498,42 @@
 		background-color: #d1fae5;
 		color: #065f46;
 	}
+
+  .pagination {
+    display: flex;
+    justify-content: center;
+    gap: 0.25rem;
+    margin-top: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .page-btn {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    background: white;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.15s;
+    min-width: 2.5rem;
+  }
+
+  .page-btn:hover:not(:disabled) {
+    border-color: #3b82f6;
+    color: #3b82f6;
+  }
+
+  .page-btn.active {
+    background-color: #3b82f6;
+    border-color: #3b82f6;
+    color: white;
+  }
+
+  .page-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
 
 	.results-count {
 		margin-top: 1rem;
