@@ -2,7 +2,7 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { drizzle } from 'drizzle-orm/d1';
 import { reports } from '$lib/server/db/schema';
-import { eq, and, gt, sql, desc } from 'drizzle-orm';
+import { eq, and, or, like, gt, sql, desc } from 'drizzle-orm';
 
 export const GET: RequestHandler = async ({ platform, url }) => {
 	try {
@@ -10,18 +10,42 @@ export const GET: RequestHandler = async ({ platform, url }) => {
     const page = Number(url.searchParams.get('page') ?? '1');
     const limit = Number(url.searchParams.get('limit') ?? '20');
     const offset = (page - 1) * limit;
+    const search = url.searchParams.get('search') ?? '';
+    const status = url.searchParams.get('status') ?? 'all';
+
+    // build where conditions
+    const conditions = [];
+
+    if (status !== 'all') {
+      conditions.push(eq(reports.status, status))
+    }
+
+    if (search) {
+      conditions.push(
+        or(
+          like(reports.license_plate, `%${search}%`),
+          like(reports.vehicle_make, `%${search}%`),
+          like(reports.vehicle_model, `%${search}%`),
+          like(reports.vehicle_color, `%${search}%`),
+          like(reports.address, `%${search}%`),
+        )
+      );
+    }
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
     const totalResults = await db
       .select({ count: sql<number>`count(*)` })
-      .from(reports);
-
+      .from(reports)
+      .where(whereClause);
     const total = Number(totalResults[0].count);
     const totalPages = Math.ceil(total / limit);
 
-		// Fetch all reports
+		// Fetch paginated + filtered reports
 		const allReports = await db
 			.select()
 			.from(reports)
+      .where(whereClause)
 			.orderBy(desc(reports.created_at))
       .limit(limit)
       .offset(offset);
