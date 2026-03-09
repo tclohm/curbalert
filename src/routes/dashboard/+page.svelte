@@ -2,18 +2,18 @@
 	import { onMount } from 'svelte';
 
 	type Report = {
-		id: number;
-		vehicleMake: string;
-		vehicleModel: string;
-		vehicleColor: string;
-		licensePlate: string;
-		plateState: string;
-		address: string;
-		reason: string;
-		notes: string | null;
-		status: 'open' | 'investigating' | 'closed';
-		createdAt: number;
-		updatedAt: number;
+    id: number;
+    vehicle_make: string;
+    vehicle_model: string;
+    vehicle_color: string;
+    license_plate: string;
+    plate_state: string;
+    address: string;
+    reason: string;
+    notes: string | null;
+    status: 'open' | 'investigating' | 'closed';
+    created_at: number;
+    updated_at: number;
 	};
 
 	let reports = $state<Report[]>([]);
@@ -36,10 +36,10 @@
 			if (searchQuery) {
 				const query = searchQuery.toLowerCase();
 				return (
-					report.licensePlate.toLowerCase().includes(query) ||
-					report.vehicleMake.toLowerCase().includes(query) ||
-					report.vehicleModel.toLowerCase().includes(query) ||
-					report.vehicleColor.toLowerCase().includes(query) ||
+					report.license_plate.toLowerCase().includes(query) ||
+					report.vehicle_make.toLowerCase().includes(query) ||
+					report.vehicle_model.toLowerCase().includes(query) ||
+					report.vehicle_color.toLowerCase().includes(query) ||
 					report.address.toLowerCase().includes(query)
 				);
 			}
@@ -189,14 +189,14 @@
 						<tr>
 							<td class="plate-cell">
 								<span class="plate-badge">
-									<span class="plate-state">{report.plateState}</span>
-									<span class="plate-number">{report.licensePlate}</span>
+									<span class="plate-state">{report.plate_state}</span>
+									<span class="plate-number">{report.license_plate}</span>
 								</span>
 							</td>
 							<td class="vehicle-cell">
-								<div class="vehicle-name">{report.vehicleMake} {report.vehicleModel}</div>
+								<div class="vehicle-name">{report.vehicle_make} {report.vehicle_model}</div>
 							</td>
-							<td>{report.vehicleColor}</td>
+							<td>{report.vehicle_color}</td>
 							<td class="address-cell">
 								<div class="address-text">{report.address}</div>
 							</td>
@@ -206,7 +206,7 @@
 									{report.status}
 								</span>
 							</td>
-							<td class="date-cell">{formatDate(report.createdAt)}</td>
+							<td class="date-cell">{formatDate(report.created_at)}</td>
 						</tr>
 					{/each}
 				</tbody>
