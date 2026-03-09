@@ -7,35 +7,32 @@ import { eq, and, gt, sql, desc } from 'drizzle-orm';
 export const GET: RequestHandler = async ({ platform }) => {
 	try {
 		const db = drizzle(platform?.env?.DB);
+    const page = Number(url.searchParmas.get('page') ?? '1');
+    const limit = Number(url.searchParmas.get('limit') ?? '20');
+    const offset = (page - 1) * limit;
+
+    const totalResults = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(reports);
+
+    const total = Number(totalResults[0].count);
+    const totalPages = Math.ceil(total / limit);
 
 		// Fetch all reports
 		const allReports = await db
 			.select()
 			.from(reports)
-			.orderBy(desc(reports.created_at));
+			.orderBy(desc(reports.created_at))
+      .limit(limit)
+      .offset(offset);
 
-		// Add report count to each report manually
-		// (We'll calculate it for each unique plate+state combination)
-		const reportsWithCount = await Promise.all(
-			allReports.map(async (report) => {
-				const count = await db
-					.select({ count: sql<number>`count(*)` })
-					.from(reports)
-					.where(
-						and(
-							eq(reports.license_plate, report.license_plate),
-							eq(reports.plate_state, report.plate_state)
-						)
-					);
-
-				return {
-					...report,
-					reportCount: Number(count[0].count)
+		return {
+			...report,
 				};
-			})
-		);
+		})
+	);
 
-		return json({ reports: reportsWithCount });
+		return json({ reports: allReports, total, page, totalPages });
 	} catch (error) {
 		console.error('Error fetching reports:', error);
 		return json({ error: 'Failed to fetch reports' }, { status: 500 });
