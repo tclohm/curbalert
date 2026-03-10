@@ -76,32 +76,13 @@
 
   let searchTimeout: ReturnType<typeof setTimeout>;
 
-  function debounceSearch() {
+  function handleSearch() {
     clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(() => {
-      loadReports(1);
-    }, 150);
+    searchTimeout = setTimeout(() => loadReports(1), 150);
   }
 
-  let initialized = $state(false);
+  onMount(() => loadReports(1))
 
-  onMount(() => {
-    loadReports(1);
-    initialized = true;
-  });
-
-  $effect(() => {
-    searchQuery; // track
-    if (!initialized) return; 
-    debounceSearch();
-  });
-
-  $effect(() => {
-    statusFilter; // track 
-    if (!initialized) rturn;
-    loadReports(1);
-  });
-  
   let pageNumbers = $derived( 
     Array.from({ length: totalPages }, (_, i) => i + 1)
   );
@@ -158,6 +139,7 @@
 			<input
 				type="text"
 				bind:value={searchQuery}
+        oninput={handleSearch}
 				placeholder="Search by plate, make, model, color, or address..."
 			/>
 		</div>
@@ -166,28 +148,28 @@
 			<button
 				class="filter-btn"
 				class:active={statusFilter === 'all'}
-				onclick={() => statusFilter = 'all'}
+				onclick={() => { statusFilter = 'all'; loadReports(1); }}
 			>
 				All ({reports.length})
 			</button>
 			<button
 				class="filter-btn"
 				class:active={statusFilter === 'open'}
-				onclick={() => statusFilter = 'open'}
+				onclick={() => { statusFilter = 'open'; loadReports(1); }}
 			>
 				Open ({reports.filter(r => r.status === 'open').length})
 			</button>
 			<button
 				class="filter-btn"
 				class:active={statusFilter === 'investigating'}
-				onclick={() => statusFilter = 'investigating'}
+				onclick={() => { statusFilter = 'investigating'; loadReports(1); }}
 			>
 				Investigating ({reports.filter(r => r.status === 'investigating').length})
 			</button>
 			<button
 				class="filter-btn"
 				class:active={statusFilter === 'closed'}
-				onclick={() => statusFilter = 'closed'}
+				onclick={() => { statusFilter = 'closed'; loadReports(1); }}
 			>
 				Closed ({reports.filter(r => r.status === 'closed').length})
 			</button>
