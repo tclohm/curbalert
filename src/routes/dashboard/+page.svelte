@@ -1,5 +1,6 @@
+
 <script lang="ts">
-	import { onMount } from 'svelte';
+  import { onMount } from "svelte";
 
 	type Report = {
     id: number;
@@ -17,7 +18,8 @@
 	};
 
 	let reports = $state<Report[]>([]);
-	let loading = $state(true);
+	let loading = $state(true);     // only true on first load
+  let refreshing = $state(false); // true on subsequent fetches
 	let error = $state<string | null>(null);
 
 	// Filters
@@ -31,50 +33,75 @@
   const LIMIT = 20;
 
   async function loadReports(page = 1) {
-    loading = true;
-    error = null; 
+    // never clear reports - let old results stay visible
+    if (reports.length === 0) {
+      loading = true;
+    } else {
+      refreshing = true
+    }
+
+    // Capture the search/filter values at time of request 
+    // to avoid race conditions if user keeps typing
+    const requestSearch = searchQuery;
+    const requestStatus = statusFilter;
+    const requestPage = page;
 
     try {
-      const response = await fetch(`/api/reports?page=${page}&limit=${LIMIT}`);
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: String(LIMIT),
+        search: requestSearch, 
+        status: requestStatus
+      });
+
+      const response = await fetch(`/api/reports?${params}`);
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Failed to load reports');
-      reports = data.reports; 
-      total = data.total;
-      totalPages = data.totalPages;
-      currentPage = data.page;
+
+      // Only update if this response is still relevant
+      // (user hasn't changed search again while we were fetching)
+      if (requestSearch === searchQuery && requestStatus == statusFilter) {
+        reports = data.reports; 
+        total = data.total;
+        totalPages = data.totalPages;
+        currentPage = data.page;
+      }
     } catch (err) {
       error = err instanceof Error ? err.message : 'Failed to load';
     } finally {
       loading = false;
+      refreshing = false;
     }
   }
 
-	// Filtered reports
-	let filteredReports = $derived(
-		reports.filter(report => {
-			// Status filter
-			if (statusFilter !== 'all' && report.status !== statusFilter) {
-				return false;
-			}
+  let searchTimeout: ReturnType<typeof setTimeout>;
 
-			// Search filter
-			if (searchQuery) {
-				const query = searchQuery.toLowerCase();
-				return (
-					report.license_plate.toLowerCase().includes(query) ||
-					report.vehicle_make.toLowerCase().includes(query) ||
-					report.vehicle_model.toLowerCase().includes(query) ||
-					report.vehicle_color.toLowerCase().includes(query) ||
-					report.address.toLowerCase().includes(query)
-				);
-			}
+  function debounceSearch() {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+      loadReports(1);
+    }, 150);
+  }
 
-			return true;
-		})
-	);
+  let initialized = $state(false);
 
-	onMount(() => loadReports(1));
+  onMount(() => {
+    loadReports(1);
+    initialized = true;
+  });
 
+  $effect(() => {
+    searchQuery; // track
+    if (!initialized) return; 
+    debounceSearch();
+  });
+
+  $effect(() => {
+    statusFilter; // track 
+    if (!initialized) rturn;
+    loadReports(1);
+  });
+  
   let pageNumbers = $derived( 
     Array.from({ length: totalPages }, (_, i) => i + 1)
   );
@@ -167,6 +194,9 @@
 		</div>
 	</div>
 
+  <!-- Subtle refresh indicator below search box -->
+  <div class="refresh-bar" class:visible={refreshing}></div>
+
 	{#if loading}
 		<div class="loading">
 			<div class="spinner"></div>
@@ -176,7 +206,7 @@
 		<div class="error-message">
 			❌ {error}
 		</div>
-	{:else if filteredReports.length === 0}
+	{:else if reports.length === 0}
 		<div class="no-results">
 			{#if searchQuery || statusFilter !== 'all'}
 				<p>No reports match your filters</p>
@@ -199,7 +229,7 @@
 					</tr>
 				</thead>
 				<tbody>
-					{#each filteredReports as report}
+					{#each reports as report}
 						<tr>
 							<td class="plate-cell">
 								<span class="plate-badge">
@@ -357,7 +387,22 @@
 		color: #6b7280;
 	}
 
-	.spinner {
+  .refresh-bar {
+    height: 2px;
+    background: linear-gradient(90deg, #3b82f6 0%, #60a5fa 50%, #3b82f6 100%);
+    background-size: 200% 100%;
+    border-radius: 1px;
+    opacity: 0;
+    transition: opacity 0.2s;
+    margin-bottom: 1rem;
+    animation: shimmer 1.2s infinite;
+  }
+
+  .refresh-bar.visible {
+    opacity: 1;
+  }
+	
+  .spinner {
 		width: 2rem;
 		height: 2rem;
 		border: 3px solid #e5e7eb;
@@ -365,6 +410,16 @@
 		border-radius: 50%;
 		animation: spin 0.6s linear infinite;
 	}
+
+  .table-container.dimmed {
+    opacity: 0.6;
+    transition: opacity 0.15s;
+  }
+
+  @keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
 
 	@keyframes spin {
 		to { transform: rotate(360deg); }
