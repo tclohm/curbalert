@@ -13,8 +13,8 @@
     reason: string;
     notes: string | null;
     status: 'open' | 'investigating' | 'closed';
-    created_at: number;
-    updated_at: number;
+    created_at: string | null;
+    updated_at: string | null;
 	};
 
 	let reports = $state<Report[]>([]);
@@ -113,8 +113,9 @@
 		}
 	}
 
-	function formatDate(timestamp: number) {
-		return new Date(timestamp * 1000).toLocaleDateString('en-US', {
+	function formatDate(timestamp: string | null) {
+    if (!timestamp) return '-';
+		return new Date(timestamp).toLocaleDateString('en-US', {
 			month: 'short',
 			day: 'numeric',
 			year: 'numeric',
