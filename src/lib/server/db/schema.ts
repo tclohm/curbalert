@@ -25,12 +25,21 @@ export const reports = sqliteTable('reports', {
 
   // track status -- 'open', 'investigating', 'resolved', 'dismissed'
   status: text('status').notNull().default('pending'),
-  // editing option
-  edit_token: text('edit_token').notNull().$defaultFn(() => crypto.randomUUID()),
+
   // timestamps
 	created_at: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
   updated_at: integer('updated_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
 }, (table) => ({
     plateIdx: index('plate_index').on(table.license_plate, table.plate_state),
     editTokenIdx: uniqueIndex('edit_token_idx').on(table.edit_token)
+}));
+
+export const reporter = sqliteTable('reporter', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  email: text('email').notNull(),
+  token: text('token').notNull().$defaultFn(() => crypto.randomUUID()),
+  created_at: integer('created_at', { mode: 'timestamp' }.$defaultFn(() => new Date())),
+}, (table) => ({
+    emailIdx: uniqueIndex('reporter_email_idx').on(table.email),
+    tokenIdx: uniqueIndex('reporter_token_idx').on(table.token)
 }));
