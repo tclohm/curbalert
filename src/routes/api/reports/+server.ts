@@ -128,6 +128,15 @@ export const POST: RequestHandler = async ({ request, platform }) => {
 			}, { status: 429 }); // 429 = Too Many Requests
 		}
 
+    let [reporter] = await db.select().from(reporters)
+      .where(eq(reporters.email, data.reporterEmail)).limit(1);
+
+    if (!reporter) {
+      [reporter] = await db.insert(reporters)
+        .values({ email: data.reporterEmail })
+        .returning();
+    }
+
 		const now = Math.floor(Date.now() / 1000);
 
 		// Insert the report using Drizzle
@@ -147,12 +156,12 @@ export const POST: RequestHandler = async ({ request, platform }) => {
       status: 'open',
       created_at: new Date(now * 1000),
       updated_at: new Date(now * 1000)
-    }).returning({ id: reports.id, edit_token: reports.edit_token });
+    }).returning({ id: reports.id });
 
 		return json({ 
 			success: true,
 			id: result[0].id,
-      editUrl: `edit/${result[0].edit_token}`
+      editUrl: `edit/${reporter.token}`
 		});
 	} catch (error) {
 		console.error('Error creating report:', error);
