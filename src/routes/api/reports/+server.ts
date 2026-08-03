@@ -147,11 +147,12 @@ export const POST: RequestHandler = async ({ request, platform }) => {
       status: 'open',
       created_at: new Date(now * 1000),
       updated_at: new Date(now * 1000)
-    }).returning({ id: reports.id });
+    }).returning({ id: reports.id, edit_token: reports.edit_token });
 
 		return json({ 
 			success: true,
-			id: result[0].id
+			id: result[0].id,
+      editUrl: `edit/${result[0].edit_token}`
 		});
 	} catch (error) {
 		console.error('Error creating report:', error);
