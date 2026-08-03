@@ -1,4 +1,4 @@
-import { integer, sqliteTable, text, real } from 'drizzle-orm/sqlite-core';
+import { integer, sqliteTable, text, real, index, uniqueIndex } from 'drizzle-orm/sqlite-core';
 
 export const reports = sqliteTable('reports', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
@@ -25,8 +25,12 @@ export const reports = sqliteTable('reports', {
 
   // track status -- 'open', 'investigating', 'resolved', 'dismissed'
   status: text('status').notNull().default('pending'),
-
+  // editing option
+  edit_token: text('edit_token').notNull().$defaultFn(() => crypto.randomUUID()),
   // timestamps
 	created_at: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
   updated_at: integer('updated_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
-});
+}, (table) => ({
+    plateIdx: index('plate_index').on(table.license_plate, table.plate_state),
+    editTokenIdx: uniqueIndex('edit_token_idx').on(table.edit_token)
+}));
