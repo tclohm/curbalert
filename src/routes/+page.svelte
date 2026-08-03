@@ -1,6 +1,6 @@
 <script lang="ts">
   import { getAll } from '@tclohm/us-states';
-
+  
 	import PhotoUpload from '$lib/components/PhotoUpload.svelte';
 	import VehicleSelector from '$lib/components/VehicleSelector.svelte';
 	import SelectDropdown from '$lib/components/SelectDropdown.svelte';
@@ -32,6 +32,8 @@
     latitude: null as number | null,
     longitude: null as number | null
 	});
+
+  let editUrl = $state<string | null>(null);
 
   async function getCurrentLocation() {
     if (!navigator.geolocation) {
@@ -130,6 +132,7 @@
 			}
 
 			submitSuccess = true;
+      editUrl = result.editUrl;
 
 			// Reset form
 			formData = {
@@ -162,6 +165,13 @@
 	{#if submitSuccess}
 		<div class="success-message">
 			✅ Report submitted successfully! Thank you for helping keep LA clean.
+      {#if editUrl}
+        <p>Save this link to edit your report later:</p>
+        <a href={editUrl}>{location.origin}{editUrl}</a>
+        <button type="button" onclick={() => navigator.clipboard.writeText((location.origin + editUrl))}>
+          Copy link 
+        </button>
+      {/if}
 		</div>
 	{/if}
 
