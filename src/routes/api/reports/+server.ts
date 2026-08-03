@@ -43,13 +43,34 @@ export const GET: RequestHandler = async ({ platform, url }) => {
 
 		// Fetch paginated + filtered reports
 		const allReports = await db
-			.select()
-			.from(reports)
+      .select({
+        id: reports.id,
+        reporter_email: reports.reporter_email,
+        license_plate: reports.license_plate,
+        plate_state: reports.plate_state,
+        vehicle_make: reports.vehicle_make,
+        vehicle_model: reports.vehicle_model,
+        vehicle_color: reports.vehicle_color,
+        latitude: reports.latitude,
+        longitude: reports.longitude,
+        address: reports.address,
+        reason: reports.reason,
+        notes: reports.notes,
+        photo_base64: reports.photo_base64,
+        status: reports.status,
+        created_at: reports.created_at,
+        updated_at: reports.updated_at,
+        report_count: sql<number>`(
+          SELECT COUNT(*) FROM reports r2
+          WHERE r2.license_plate = reports.license_plate
+            AND r2.plate_state = reports.plate_state
+        )`
+      })
+      .from(reports)
       .where(whereClause)
-			.orderBy(desc(reports.created_at))
+      .orderBy(desc(reports.created_at))
       .limit(limit)
       .offset(offset);
-
 		return json({ reports: allReports, total, page, totalPages });
 	} catch (error) {
 		console.error('Error fetching reports:', error);

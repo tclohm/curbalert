@@ -15,6 +15,7 @@
     status: 'open' | 'investigating' | 'closed';
     created_at: string | null;
     updated_at: string | null;
+    report_count: number;
 	};
 
 	let reports = $state<Report[]>([]);
@@ -219,6 +220,9 @@
 									<span class="plate-state">{report.plate_state}</span>
 									<span class="plate-number">{report.license_plate}</span>
 								</span>
+                {#if report.report_count > 1}
+                  <span class="report-count-badge">Reported {report.report_count}×</span>
+                {/if}
 							</td>
 							<td class="vehicle-cell">
 								<div class="vehicle-name">{report.vehicle_make} {report.vehicle_model}</div>
@@ -428,6 +432,17 @@
 		border-radius: 0.5rem;
 		background: white;
 	}
+
+  .report-count-badge {
+    display: inline-block;
+    margin-left: 0.5rem;
+    padding: 0.125rem 0.5rem;
+    background-color: #fef3c7;
+    color: #92400e;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
 
 	.reports-table {
 		width: 100%;
