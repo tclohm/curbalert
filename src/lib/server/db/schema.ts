@@ -42,3 +42,13 @@ export const reporters = sqliteTable('reporters', {
     emailIdx: uniqueIndex('reporter_email_idx').on(table.email),
     tokenIdx: uniqueIndex('reporter_token_idx').on(table.token)
 }));
+
+export const votes = sqliteTable('votes', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  report_id: text('report_id').notNull().references(() => reports.id),
+  voter_token: text('voter_token').notNull(),
+  created_at: integer('created_at', { mode: 'timestamp'}).$defaultFn(() => new Date()),
+}, (table) => ({
+  // one vote per (report, voter) - stop inifite upvoting
+  uniqueVote: uniqueIndex('unique_vote_idx').on(table.report_id, table.voter_token),
+}));

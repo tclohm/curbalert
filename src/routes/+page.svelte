@@ -133,6 +133,7 @@
 
 			submitSuccess = true;
       editUrl = result.editUrl;
+      localStorage.setItem('editUrl', result.editUrl);
 
 			// Reset form
 			formData = {
