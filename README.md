@@ -80,7 +80,18 @@ npm run test:e2e       # playwright
 
 ## Deploying
 
-This project deploys to Cloudflare Pages with a D1 database bound as `DB` (see `wrangler.jsonc`).
+This project deploys to Cloudflare Pages with a D1 database bound as `DB` (see `wrangler.jsonc`). Since our migration files live in `drizzle/` (from `drizzle-kit generate`) rather than Wrangler's default `migrations/` folder, `wrangler.jsonc` points at it explicitly:
+
+```jsonc
+"d1_databases": [
+  {
+    "binding": "DB",
+    "database_name": "curbalert-la-db",
+    "database_id": "9939ab6f-5e36-40e7-8027-a5bc853e6368",
+    "migrations_dir": "drizzle"
+  }
+]
+```
 
 ```sh
 npm run build
@@ -99,3 +110,14 @@ npx wrangler d1 migrations apply curbalert-la-db --remote
 ```
 
 > Local dev (`npm run dev`), Wrangler's local D1 emulator, and plain SQLite (used by `drizzle-kit migrate` per `DATABASE_URL`) are three separate databases — migrations applied to one won't show up in the others.
+
+### Troubleshooting: "table already exists" / "no such table"
+
+If `wrangler d1 migrations apply` fails with something like `table 'reports' already exists`, it means a table got created in that database outside of Wrangler's migration tracking (e.g. an old `drizzle-kit push`, or a stray dev session), so Wrangler doesn't know that migration already ran. For **local dev only** (never run this against `--remote`), the fastest fix is to wipe the local D1 emulator's storage and let migrations rebuild it from scratch:
+
+```sh
+rm -rf .wrangler/state/v3/d1
+npx wrangler d1 migrations apply curbalert-la-db --local
+```
+
+If you instead see `no such table` errors while the app is running, it usually means migrations were applied to the wrong database — double check you're running the `--local` command above (not `drizzle-kit migrate`, which uses `DATABASE_URL` and a separate plain-SQLite file, not D1 at all).the others.
