@@ -33,7 +33,7 @@ export const reports = sqliteTable('reports', {
     plateIdx: index('plate_index').on(table.license_plate, table.plate_state),
 }));
 
-export const reporter = sqliteTable('reporters', {
+export const reporters = sqliteTable('reporters', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   email: text('email').notNull(),
   token: text('token').notNull().$defaultFn(() => crypto.randomUUID()),
