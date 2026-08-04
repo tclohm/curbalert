@@ -8,7 +8,8 @@
     {
       "binding": "DB",
       "database_name": "curbalert-la-db",
-      "database_id": "9939ab6f-5e36-40e7-8027-a5bc853e6368"
+      "database_id": "9939ab6f-5e36-40e7-8027-a5bc853e6368",
+      "migrations_dir": "drizzle"
     }
   ]
 }
