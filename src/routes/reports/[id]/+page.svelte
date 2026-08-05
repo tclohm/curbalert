@@ -21,25 +21,22 @@
     return token;
   }
 
-  async function checkOwnership() {
-    const editUrl = localStorage.getItem('editUrl'); // e.g. "/edit/abc-123"
-    if (!editUrl) return;
-    const token = editUrl.split('/').pop();
-    const res = await fetch(`/api/reports/edit/${token}`);
-    if (!res.ok) return;
-    const { reports } = await res.json();
-    canEdit = reports.some((r: any) => r.id === reportId);
-  }
-
   async function load() {
     voterToken = getOrCreateVoterToken();
-    const res = await fetch(`/api/reports/${reportId}?voterToken=${voterToken}`);
+    const editUrl = localStorage.getItem('editUrl');
+    const editToken = editUrl ? editUrl.split('/').pop() : '';
+    
+    const params = new URLSearchParams({ voterToken });
+    if (editToken) params.set('editToken', editToken);
+
+    const res = await fetch(`/api/reports/${reportId}?${params}`);
     const data = await res.json();
     if (!res.ok) { error = data.error; loading = false; return; }
+
     report = data.report;
     hasVoted = data.hasVoted;
+    canEdit = data.canEdit;
     loading = false;
-    await checkOwnership();
   }
 
   async function upvote() {
