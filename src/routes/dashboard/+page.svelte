@@ -1,9 +1,10 @@
 
 <script lang="ts">
   import { onMount } from "svelte";
+  import { goto } from "$app/navigation";
 
 	type Report = {
-    id: number;
+    id: string;
     vehicle_make: string;
     vehicle_model: string;
     vehicle_color: string;
@@ -214,7 +215,7 @@
 				</thead>
 				<tbody>
 					{#each reports as report}
-						<tr>
+						<tr onclick={() => goto(`/report/${report.id}`)} class="clickable-row">
 							<td class="plate-cell">
 								<span class="plate-badge">
 									<span class="plate-state">{report.plate_state}</span>
@@ -281,11 +282,22 @@
 </div>
 
 <style>
+
+  .clickable-row {
+    cursor: pointer;
+  }
+
+  .clickable-row:hover {
+    background-color: rgba(0, 0, 0, 0.03);
+  }
+
 	.container {
 		max-width: 1400px;
 		margin: 0 auto;
 		padding: 2rem 1rem;
 	}
+
+  
 
 	header {
 		margin-bottom: 2rem;
