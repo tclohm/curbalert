@@ -7,6 +7,7 @@ import { eq, sql, and } from 'drizzle-orm';
 export const GET: RequestHandler = async ({ platform, params, url }) => {
   const db = drizzle(platform?.env?.DB);
   const voterToken = url.searchParams.get('voterToken');
+  const editToken = url.searchParams.get('editToken');
 
   const [report] = await db.select({
     id: reports.id,
@@ -35,5 +36,12 @@ export const GET: RequestHandler = async ({ platform, params, url }) => {
     hasVoted = !!existing;
   }
 
-  return json({ report, hasVoted });
+  let canEdit = false;
+  if (editToken) {
+    const [reporter] = await db.select({ email: reporters.email }).from(reporters)
+      .where(eq(reporters.token, editToken)).limit(1);
+    canEdit = !!reporter && reporter.email == report.reporter_email;
+  }
+
+  return json({ report, hasVoted, canEdit });
 };
