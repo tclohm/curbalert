@@ -99,9 +99,35 @@ This project deploys to Cloudflare Pages with a D1 database bound as `DB` (see `
 ]
 ```
 
+### Manual deploy (CLI)
+
+Log in to Cloudflare, if you haven't already (one-time):
+
+```sh
+npx wrangler login
+```
+
+Build the app:
+
 ```sh
 npm run build
 ```
+
+Deploy — Wrangler reads the output directory from `pages_build_output_dir` in `wrangler.jsonc` automatically, so no path argument is needed:
+
+```sh
+npx wrangler pages deploy
+```
+
+First deploy will prompt you to create the Pages project and pick a Cloudflare account (if you have more than one). You'll get a live URL like `https://curbalert-la.pages.dev`.
+
+> Deploying the app and migrating the database are separate steps — deploying doesn't touch D1 at all. Always make sure remote migrations are applied (see below) before or right after a deploy, or you'll ship a frontend against a database that's missing tables/columns.
+
+### Auto-deploy on push (alternative)
+
+Instead of running the CLI manually every time, you can connect this repo in the Cloudflare dashboard under **Workers & Pages → your project → Settings → Builds**, so every push to the connected branch builds and deploys automatically, with preview URLs on pull requests.
+
+### Database migrations
 
 Apply migrations to the **local** Wrangler D1 emulator during development:
 
@@ -127,3 +153,32 @@ npx wrangler d1 migrations apply curbalert-la-db --local
 ```
 
 If you instead see `no such table` errors while the app is running, it usually means migrations were applied to the wrong database — double check you're running the `--local` command above (not `drizzle-kit migrate`, which uses `DATABASE_URL` and a separate plain-SQLite file, not D1 at all).
+
+### Troubleshooting: the same conflict on `--remote`
+
+The same "table already exists" error can happen against production, but **don't reuse the local fix** — you can't just wipe a live D1 database the same way you wipe the local emulator's folder.
+
+First, check what's actually there and whether Wrangler's tracking table (`d1_migrations`) exists yet:
+
+```sh
+npx wrangler d1 execute curbalert-la-db --remote --command "SELECT name FROM sqlite_master WHERE type='table'"
+```
+
+**If `d1_migrations` doesn't exist**, the table was created outside migration tracking. Mark the conflicting migration as already applied, without re-running its SQL:
+
+```sh
+npx wrangler d1 execute curbalert-la-db --remote --command "CREATE TABLE IF NOT EXISTS d1_migrations (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE, applied_at DATETIME DEFAULT CURRENT_TIMESTAMP)"
+
+npx wrangler d1 execute curbalert-la-db --remote --command "INSERT INTO d1_migrations (name) VALUES ('0000_motionless_jazinda.sql')"
+
+npx wrangler d1 migrations apply curbalert-la-db --remote
+```
+
+**If you'd rather just start clean** (only reasonable while there's no real data in it — check first), drop the conflicting table(s) and let migrations rebuild them:
+
+```sh
+npx wrangler d1 execute curbalert-la-db --remote --command "DROP TABLE reports"
+npx wrangler d1 migrations apply curbalert-la-db --remote
+```
+
+D1 has [Time Travel](https://developers.cloudflare.com/d1/reference/time-travel/), a point-in-time restore that Cloudflare keeps automatically (30 days on paid plans, shorter on free), so a `DROP TABLE` on remote isn't instantly unrecoverable if something goes wrong — but treat it as a safety net, not a reason to skip checking what's in the table first.
