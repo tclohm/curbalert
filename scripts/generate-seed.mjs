@@ -2,7 +2,7 @@ import { readdirSync, readFileSync, writeFileSync } from 'fs';
 import { extname, basename, join } from 'path';
 
 const PHOTOS_DIR = './scripts/seed-photos';
-const OUTPUT_FILE = './scripts/seed-generated.sql';
+const OUTPUT_FILE = './scripts/seed-photos-generated.sql';
 
 const MIME_TYPES = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp' };
 
