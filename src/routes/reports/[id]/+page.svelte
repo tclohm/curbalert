@@ -82,8 +82,10 @@
 
   function editHref() {
     const editUrl = localStorage.getItem('editUrl');
-    return editUrl ?? '#';
+    if (!editUrl) return '#';
+    return editUrl.startsWith('/') ? editUrl : `/${editUrl}`;
   }
+
   onMount(load);
 </script>
 
