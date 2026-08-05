@@ -161,7 +161,7 @@ export const POST: RequestHandler = async ({ request, platform }) => {
 		return json({ 
 			success: true,
 			id: result[0].id,
-      editUrl: `edit/${reporter.token}`
+      editUrl: `/edit/${reporter.token}`
 		});
 	} catch (error) {
 		console.error('Error creating report:', error);
