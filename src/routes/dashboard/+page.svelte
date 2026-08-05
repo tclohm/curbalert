@@ -215,7 +215,7 @@
 				</thead>
 				<tbody>
 					{#each reports as report}
-						<tr onclick={() => goto(`/report/${report.id}`)} class="clickable-row">
+						<tr onclick={() => goto(`/reports/${report.id}`)} class="clickable-row">
 							<td class="plate-cell">
 								<span class="plate-badge">
 									<span class="plate-state">{report.plate_state}</span>
