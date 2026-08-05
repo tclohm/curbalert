@@ -6,8 +6,10 @@ A community tool for reporting abandoned or illegally parked vehicles in Los Ang
 
 - **Report a vehicle** — anyone can submit a report with a photo, license plate, vehicle details, and location (auto-detected via geolocation + reverse geocoding, or entered manually).
 - **Rate limiting** — the same email can't report the same plate again within 72 hours.
-- **Dashboard** — browse all reports, with search and status filtering (open / investigating / closed), and see how many times a given vehicle has been reported in total.
-- **Edit your reports** — after submitting, reporters get a unique edit link (`/edit/[token]`) tied to their email. That one link lists and lets them update every report they've filed — no account or password needed.
+- **Dashboard** — browse all reports, with search and status filtering (open / investigating / closed), and see how many times a given vehicle has been reported in total. Click any row to open its detail page.
+- **Report detail page** — full info on a single report (`/reports/[id]`), including how many times that plate has been reported overall and a total upvote count.
+- **Upvote / validate a report** — anyone viewing a report can upvote it to corroborate that it's accurate. A random anonymous token is generated and saved to `localStorage` on first upvote, so the same browser can't upvote a given report more than once (a soft, MVP-level limit — not real anti-abuse).
+- **Edit your reports** — after submitting, reporters get a unique edit link (`/edit/[token]`) tied to their email. That one link lists and lets them update every report they've filed — no account or password needed. If you're viewing a report's detail page and your saved edit token matches its reporter, an "Edit this report" button appears; otherwise it doesn't.
 
 ## Tech stack
 
@@ -22,21 +24,25 @@ A community tool for reporting abandoned or illegally parked vehicles in Los Ang
 ```
 src/
   routes/
-    +page.svelte              # report submission form
-    dashboard/                # browse/search/filter all reports
-    edit/[token]/             # reporter's edit page for their own reports
-    api/reports/               # POST (create), GET (list/search)
-    api/reports/edit/[token]/ # GET/PATCH reports for a given reporter token
+    +page.svelte                  # report submission form
+    dashboard/                    # browse/search/filter all reports
+    reports/[id]/                 # single report detail page + upvote button
+    edit/[token]/                 # reporter's edit page for their own reports
+    api/reports/                   # POST (create), GET (list/search)
+    api/reports/[id]/             # GET a single report (with counts + edit-access check)
+    api/reports/[id]/vote/        # POST an upvote for a report
+    api/reports/edit/[token]/     # GET/PATCH reports for a given reporter token
   lib/
-    components/               # VehicleSelector, ColorSelector, PhotoUpload, SelectDropdown, Navbar
-    server/db/                # Drizzle schema + DB client
-    utils/imageCompression.ts # client-side photo compression before upload
+    components/                   # VehicleSelector, ColorSelector, PhotoUpload, SelectDropdown, Navbar
+    server/db/                    # Drizzle schema + DB client
+    utils/imageCompression.ts     # client-side photo compression before upload
 ```
 
 ### Database schema
 
 - **`reports`** — one row per submission: reporter email, plate/state, vehicle make/model/color, lat/lng + address, reason, notes, photo (base64), status, timestamps. Indexed on `(license_plate, plate_state)`.
 - **`reporters`** — one row per unique email, holding the edit `token` used to authenticate that reporter's `/edit/[token]` page.
+- **`votes`** — one row per (report, anonymous voter token) upvote. A unique index on `(report_id, voter_token)` is what actually enforces one upvote per browser per report — not anything client-side.
 
 ## Developing
 
@@ -120,4 +126,4 @@ rm -rf .wrangler/state/v3/d1
 npx wrangler d1 migrations apply curbalert-la-db --local
 ```
 
-If you instead see `no such table` errors while the app is running, it usually means migrations were applied to the wrong database — double check you're running the `--local` command above (not `drizzle-kit migrate`, which uses `DATABASE_URL` and a separate plain-SQLite file, not D1 at all).the others.
+If you instead see `no such table` errors while the app is running, it usually means migrations were applied to the wrong database — double check you're running the `--local` command above (not `drizzle-kit migrate`, which uses `DATABASE_URL` and a separate plain-SQLite file, not D1 at all).
