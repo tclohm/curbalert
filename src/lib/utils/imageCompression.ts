@@ -14,7 +14,7 @@ export async function compressImageToBase64(
     quality?: number;
   } = {}
 ): Promise<string> {
-  const { maxSizeKB = 500, maxWidth = 1920, quality = 0.8 } = options;
+  const { maxSizeKB = 150, maxWidth = 1280, quality = 0.75 } = options;
 
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
