@@ -48,6 +48,12 @@
       refreshing = true
     }
 
+  function wasEdited(created: string | null, updated: string | null): boolean {
+    if (!created || !updated) return false;
+    const gapMs = new Date(updated).getTime() - new Date(created).getTime();
+    return gapMs > 60_000; // more than a minute apart = a real edit, not insert jitter
+  }
+
     // Capture the search/filter values at time of request 
     // to avoid race conditions if user keeps typing
     const requestSearch = searchQuery;
@@ -247,7 +253,12 @@
 									{report.status}
 								</span>
 							</td>
-							<td class="date-cell">{formatDate(report.created_at)}</td>
+              <td class="date-cell">
+                {formatDate(report.created_at)}
+                {#if wasEdited(report.created_at, report.updated_at)}
+                  <span class="edited-badge">Edited {formatDate(report.updated_at)}</span>
+                {/if}
+              </td>
 						</tr>
 					{/each}
 				</tbody>
@@ -306,7 +317,13 @@
 		padding: 2rem 1rem;
 	}
 
-  
+  .edited-badge {
+    display: block;
+    margin: 0.125rem;
+    color: #9ca3af;
+    font-size: 0.75rem;
+    font-style: italic;
+  }  
 
 	header {
 		margin-bottom: 2rem;
