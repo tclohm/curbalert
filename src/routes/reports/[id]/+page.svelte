@@ -80,6 +80,12 @@
     }
   }
 
+  function wasEdited(created: string | null, updated: string | null): boolean {
+    if (!created || !updated) return false;
+    const gapMs = new Date(updated).getTime() - new Date(created).getTime();
+    return gapMs > 60_000; // more than a minute apart = a real edit, not insert jitter
+  }
+
   function editHref() {
     const editUrl = localStorage.getItem('editUrl');
     if (!editUrl) return '#';
@@ -115,7 +121,12 @@
 
     <div class="meta-row">
       <span class="status-badge {getStatusColor(report.status)}">{report.status}</span>
-      <span class="date-text">Reported {formatDate(report.created_at)}</span>
+      <span class="date-text">
+        Reported {formatDate(report.created_at)}
+        {#if wasEdited(reported.created_at, reported.updated_at)}
+              · Edited {formatDate(report.updated_at)}
+        {/if}
+      </span>
     </div>
 
     <div class="detail-card">

@@ -23,6 +23,7 @@ export const GET: RequestHandler = async ({ platform, params, url }) => {
     photo_base64: reports.photo_base64,
     status: reports.status,
     created_at: reports.created_at,
+    updated_at: reports.updated_at,
     report_count: sql<number>`(SELECT COUNT(*) FROM reports r2 WHERE r2.license_plate = reports.license_plate AND r2.plate_state = reports.plate_state)`,
     vote_count: sql<number>`(SELECT COUNT(*) FROM votes v WHERE v.report_id = reports.id)`
   }).from(reports).where(eq(reports.id, params.id)).limit(1);
