@@ -41,6 +41,21 @@ export const GET: RequestHandler = async ({ platform, url }) => {
     const total = Number(totalResults[0].count);
     const totalPages = Math.ceil(total / limit);
 
+    const statusCount = await db
+      .select({
+        status: reports.status,
+        count: sql<number>`COUNT(*)`
+      })
+      .from(reports)
+      .groupBy(reports.status);
+
+    const counts = {
+      all: statusCount.reduce((sum, s) => sum + s.count, 0),
+      open: statusCount.find(s => s.status === 'open')?.count ?? 0,
+      investigating: statusCount.find(s => s.status === 'investigating')?.count ?? 0,
+      closed: statusCount.find(s => s.status === 'closed')?.count ?? 0
+    };
+
 		// Fetch paginated + filtered reports
 		const allReports = await db
       .select({
@@ -71,7 +86,7 @@ export const GET: RequestHandler = async ({ platform, url }) => {
       .orderBy(desc(reports.created_at))
       .limit(limit)
       .offset(offset);
-		return json({ reports: allReports, total, page, totalPages });
+		return json({ reports: allReports, total, page, totalPages, counts });
 	} catch (error) {
 		console.error('Error fetching reports:', error);
 		return json({ error: 'Failed to fetch reports' }, { status: 500 });
