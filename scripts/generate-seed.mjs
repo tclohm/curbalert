@@ -1,8 +1,8 @@
-import { readdirSync, readFileSync, writeFileSync } from 'fs';
+import { readdirSync, readFileSync, writeFileSync, unlinkSync } from 'fs';
 import { extname, basename, join } from 'path';
+import { execSync } from 'child_process';
 
 const PHOTOS_DIR = './scripts/seed-photos';
-const OUTPUT_FILE = './scripts/seed-photos-generated.sql';
 
 const MIME_TYPES = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp' };
 
@@ -13,7 +13,7 @@ if (files.length === 0) {
   process.exit(0);
 }
 
-const statements = files.map(file => {
+const entries = files.map(file => {
   const name = basename(file, extname(file)).toUpperCase(); // e.g. "8ABC123_CA"
   const [plate, state] = name.split('_');
 
@@ -26,8 +26,20 @@ const statements = files.map(file => {
   const base64 = readFileSync(join(PHOTOS_DIR, file)).toString('base64');
   const dataUri = `data:${mime};base64,${base64}`;
 
-  return `UPDATE reports SET photo_base64 = '${dataUri}' WHERE license_plate = '${plate}' AND plate_state = '${state}' AND id = (SELECT id FROM reports WHERE license_plate = '${plate}' AND plate_state = '${state}' ORDER BY created_at DESC LIMIT 1);`;
+  const statement = `UPDATE reports SET photo_base64 = '${dataUri}' WHERE license_plate = '${plate}' AND plate_state = '${state}' AND id = (SELECT id FROM reports WHERE license_plate = '${plate}' AND plate_state = '${state}' ORDER BY created_at DESC LIMIT 1);`;
+
+  return { file, statement };
 }).filter(Boolean);
 
-writeFileSync(OUTPUT_FILE, statements.join('\n'));
-console.log(`Wrote ${statements.length} photo update(s) to ${OUTPUT_FILE}`);
+entries.forEach(({ file, statement }, i) => {
+  const tmpFile = `./scripts/tmp-photo-${i}.sql`;
+  writeFileSync(tmpFile, statement);
+  try {
+    execSync(`npx wrangler d1 execute curbalert-la-db --local --file=${tmpFile}`, { stdio: 'inherit' });
+    console.log(`✓ Applied photo for ${file}`);
+  } catch (e) {
+    console.error(`✗ Failed on ${file}`);
+  } finally {
+    unlinkSync(tmpFile);
+  }
+});
