@@ -1,4 +1,3 @@
-
 <script lang="ts">
   import { onMount } from "svelte";
   import { goto } from "$app/navigation";
@@ -28,11 +27,18 @@
 	let searchQuery = $state('');
 	let statusFilter = $state<'all' | 'open' | 'investigating' | 'closed'>('all');
 
+  let counts = $state({ all: 0, open: 0, investigating: 0, closed: 0 });
+
   // Pagination state 
   let currentPage = $state(1);
   let totalPages = $state(1);
   let total = $state(0);
   const LIMIT = 20;
+
+  function setFilter(newFilter: typeof statusFilter) {
+    statusFilter = newFilter;
+    loadReports(1);
+  }
 
   async function loadReports(page = 1) {
     // never clear reports - let old results stay visible
@@ -62,11 +68,14 @@
 
       // Only update if this response is still relevant
       // (user hasn't changed search again while we were fetching)
-      if (requestSearch === searchQuery && requestStatus == statusFilter) {
+      if (requestSearch === searchQuery &&
+          requestStatus === statusFilter && 
+          requestPage === currentPage) {
         reports = data.reports; 
         total = data.total;
         totalPages = data.totalPages;
         currentPage = data.page;
+        counts = data.counts;
       }
     } catch (err) {
       error = err instanceof Error ? err.message : 'Failed to load';
@@ -151,30 +160,30 @@
 			<button
 				class="filter-btn"
 				class:active={statusFilter === 'all'}
-				onclick={() => { statusFilter = 'all'; loadReports(1); }}
+				onclick={() => setFilter('all')}
 			>
-				All ({reports.length})
+				All ({counts.all})
 			</button>
 			<button
 				class="filter-btn"
 				class:active={statusFilter === 'open'}
-				onclick={() => { statusFilter = 'open'; loadReports(1); }}
+				onclick={() => setFilter('open')}
 			>
-				Open ({reports.filter(r => r.status === 'open').length})
+				Open ({counts.open})
 			</button>
 			<button
 				class="filter-btn"
 				class:active={statusFilter === 'investigating'}
-				onclick={() => { statusFilter = 'investigating'; loadReports(1); }}
+				onclick={() => setFilter('investigating')}
 			>
-				Investigating ({reports.filter(r => r.status === 'investigating').length})
+				Investigating ({counts.investigating})
 			</button>
 			<button
 				class="filter-btn"
 				class:active={statusFilter === 'closed'}
-				onclick={() => { statusFilter = 'closed'; loadReports(1); }}
+				onclick={() => setFilter('closed')}
 			>
-				Closed ({reports.filter(r => r.status === 'closed').length})
+				Closed ({counts.closed})
 			</button>
 		</div>
 	</div>
