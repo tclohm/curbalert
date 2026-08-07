@@ -12,6 +12,10 @@
     label: state.abbr
   }));
 
+  let scanningPlate = $state(false);
+  let plateConfidence = $state(0);
+  let plateScanError = $state<string | null>(null);
+
 	let photoBase64 = $state<string | null>(null);
 	let selectedMake = $state('');
 	let selectedModel = $state('');
