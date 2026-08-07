@@ -5,6 +5,7 @@
 	import VehicleSelector from '$lib/components/VehicleSelector.svelte';
 	import SelectDropdown from '$lib/components/SelectDropdown.svelte';
   import ColorSelector from '$lib/components/ColorSelector.svelte';
+	import { binary } from 'drizzle-orm/mysql-core';
 
   // Get all us states and convert to SelectDropdown format 
   const stateOptions = getAll().map(state => ({
@@ -12,10 +13,12 @@
     label: state.abbr
   }));
 
+  // Microservice APLR states
   let scanningPlate = $state(false);
   let plateConfidence = $state(0);
   let plateScanError = $state<string | null>(null);
 
+  // Local states
 	let photoBase64 = $state<string | null>(null);
 	let selectedMake = $state('');
 	let selectedModel = $state('');
@@ -38,6 +41,18 @@
 	});
 
   let editUrl = $state<string | null>(null);
+
+  // helper 
+  function base64ToFile(base64: string, filename = 'plate.jpg'): File {
+    const [meta, data] = base64.split(',');
+    const mime = meta.match(/:(.*?);/)?.[1] || 'image/jpeg';
+    const binary = atob(data);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0 ; i < binary.length ; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return new File([bytes], filename, { type: mime });
+  }
 
   async function getCurrentLocation() {
     if (!navigator.geolocation) {
@@ -161,6 +176,44 @@
 			isSubmitting = false;
 		}
 	}
+
+  async function scanPlate(base64: string) {
+    scanningPlate = true;
+    plateScanError = null;
+
+    try {
+      const file = base64ToFile(base64);
+      const scanFormData = new FormData();
+      scanFormData.append('file', file);
+
+      const res = await fetch('/api/scan-plate', {
+        method: 'POST',
+        body: scanFormData
+      });
+      const data = await res.json();
+
+      if (data.success && data.confidence > 0.75) {
+        formData.licensePlate = data.plate;
+        plateConfidence = data.confidence;
+      } else {
+        plateConfidence = 0;
+      }
+    } catch (err) {
+      plateScanError = 'Could not scan plate automatically. Enter it manually.';
+      plateConfidence = 0;
+    } finally {
+      scanningPlate = false;
+    }
+  }
+
+
+  // Effects
+  $effect(() => {
+    if (photoBase64) {
+      scanPlate(photoBase64);
+    }
+  })
+
 </script>
 
 <div class="container">
@@ -237,6 +290,13 @@
 		<!-- License Plate -->
 		<section>
 			<label for="plate" class="label">License Plate *</label>
+      {#if scanningPlate}
+        <p class="scan-status">Scanning plate from photo...</p>
+      {/if}
+
+      {#if plateScanError}
+        <p class="scan-status error">{plateScanError}</p>
+      {/if}
 			<div class="plate-row">
 				<input
 					id="plate"
@@ -254,6 +314,9 @@
 					/>
 				</div>
 			</div>
+      {#if plateConfidence > 0}
+        <p class="scan-status success">Auto-detected with {(plateConfidence * 100).toFixed(0)}% confidence - please confirm</p>
+      {/if}
 		</section>
 
 		<!-- Reason -->
@@ -425,6 +488,19 @@
 		flex: 1;
 		text-transform: uppercase;
 	}
+
+  .scan-status {
+    font-size: 0.875rem;
+    color: #6b7280;
+  }
+
+  .scan-status.success {
+    color: #059669;
+  }
+
+  .scan-status.error {
+    color: #dc2626;
+  }
 
 	.state-select {
 		width: 5rem;
