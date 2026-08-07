@@ -123,7 +123,7 @@
       <span class="status-badge {getStatusColor(report.status)}">{report.status}</span>
       <span class="date-text">
         Reported {formatDate(report.created_at)}
-        {#if wasEdited(reported.created_at, reported.updated_at)}
+        {#if wasEdited(report.created_at, report.updated_at)}
               · Edited {formatDate(report.updated_at)}
         {/if}
       </span>

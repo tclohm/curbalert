@@ -48,12 +48,6 @@
       refreshing = true
     }
 
-  function wasEdited(created: string | null, updated: string | null): boolean {
-    if (!created || !updated) return false;
-    const gapMs = new Date(updated).getTime() - new Date(created).getTime();
-    return gapMs > 60_000; // more than a minute apart = a real edit, not insert jitter
-  }
-
     // Capture the search/filter values at time of request 
     // to avoid race conditions if user keeps typing
     const requestSearch = searchQuery;
@@ -140,6 +134,12 @@
 			minute: '2-digit'
 		});
 	}
+
+  function wasEdited(created: string | null, updated: string | null): boolean {
+    if (!created || !updated) return false;
+    const gapMs = new Date(updated).getTime() - new Date(created).getTime();
+    return gapMs > 60_000; // more than a minute apart = a real edit, not insert jitter
+  }
 </script>
 
 <div class="container">
