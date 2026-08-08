@@ -1,16 +1,15 @@
 <script lang="ts">
   import { compressImageToBase64, validateImageFile, getBase64Size, convertHeicIfNeeded } from '$lib/utils/imageCompression';
-	import { warn } from 'console';
   
   let {
     onPhotoCompressed = $bindable(),
-    maxSizeKB = 150, 
+    maxSizeKB = 500
   }: {
     onPhotoCompressed?: string | null;
     maxSizeKB?: number;
   } = $props();
 
-  let fileInput: HTMLInputElement; 
+  let fileInput = $state<HTMLInputElement>();
   let previewUrl = $state<string | null>(null);
   let isCompressing = $state(false);
   let error = $state<string | null>(null);
@@ -20,6 +19,8 @@
     const target = event.target as HTMLInputElement;
     let file = target.files?.[0];
     if (!file) return;
+
+    const originalSizeBytes = file.size;
 
     // reset state 
     error = null;
@@ -38,16 +39,17 @@
       return;
     }
     
-    // validate type/size 
+    // validate file 
     const validation = validateImageFile(file);
     if (!validation.valid) {
-      error = validation.error || null;
+      error = validation.error;
       isCompressing = false;
       return;
     }
 
     try {
-      // compress + resize, get base64 
+      // compress 
+      console.log('File before compression:', file.name, file.type, file.size);
       const base64 = await compressImageToBase64(file, {
         maxSizeKB, 
         maxWidth: 500, 
@@ -60,7 +62,7 @@
       
       // Show compression stats 
       compressionStats = {
-        originalKB: Math.round(file.size / 1024),
+        originalKB: Math.round(originalSizeBytes / 1024),
         compressedKB: Math.round(getBase64Size(base64))
       };
     } catch (e) {
@@ -120,7 +122,7 @@
   <!-- Preview -->
   {#if previewUrl}
     <div class="preview-container">
-      <img src={previewUrl} alt="Vehicle photo" class="preview-image" />
+      <img src={previewUrl} alt="Vehicle" class="preview-image" />
       <button type="button" onclick={clearPhoto} class="remove-button"> Remove Photo </button>
     </div>
   {/if} 
