@@ -47,6 +47,7 @@
 
     try {
       // compress 
+      console.log('File before compression:', file.name, file.type, file.size);
       const base64 = await compressImageToBase64(file, {
         maxSizeKB, 
         maxWidth: 1920, 

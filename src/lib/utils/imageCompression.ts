@@ -110,42 +110,55 @@ export function getBase64Size(base64: string): number {
 }
 
 /**
- * Detects if a file is HEIC/HEIF format
- * iOS often reports this as file.type = 'image/heic', 'image/heif', or sometimes blank -
- * so we also check the file extension as a fallback.
+ * Reads the first bytes of a file and checks its real format via magic bytes,
+ * since iOS can report inaccurate file.type/extension (e.g. a file named
+ * "IMG_7124.jpg" that is still HEIC-encoded internally).
  */
-function isHeic(file: File): boolean {
-  const type = file.type.toLowerCase();
-  const name = file.name.toLowerCase();
-  return (
-    type === 'image/heic' ||
-    type === 'image/heif' ||
-    name.endsWith('.heic') ||
-    name.endsWith('.heif')
-  );
-}
+async function detectRealFormat(file: File): Promise<'jpeg' | 'png' | 'webp' | 'heic' | 'unknown'> {
+  const buffer = await file.slice(0, 12).arrayBuffer();
+  const bytes = new Uint8Array(buffer);
 
+  if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) {
+    return 'jpeg';
+  }
+
+  if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47) {
+    return 'png';
+  }
+
+  const asString = String.fromCharCode(...bytes.slice(0, 12));
+  if (asString.startsWith('RIFF') && asString.includes('WEBP')) {
+    return 'webp';
+  }
+
+  const ftypBrand = String.fromCharCode(...bytes.slice(4, 12));
+  if (ftypBrand.includes('ftyp')) {
+    return 'heic';
+  }
+
+  return 'unknown';
+}
 /**
  * Converts a HEIC/HEIF file to a JPEG File, so the rest of the pipeline
  * (validateImageFile, compressImageToBase64) can treat it like any other image.
  */
-export async function convertHeicIfNeeded(file: File): Promise<File>{
-  if (!isHeic(file)) {
+export async function convertHeicIfNeeded(file: File): Promise<File> {
+  const format = await detectRealFormat(file);
+
+  if (format !== 'heic') {
     return file;
   }
 
   const heic2any = (await import('heic2any')).default;
-
   const convertedBlob = await heic2any({
     blob: file,
     toType: 'image/jpeg',
-    quality: 0.9 // pre-compression, existing pipeline compresses further anyway
+    quality: 0.9
   });
 
-  // heic2any can return a single Blob or an array - normalize to one 
   const blob = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
 
-  return new File([blob], file.name.replace(/\.(heic|heif)$/i, 'jgp'), {
+  return new File([blob], file.name.replace(/\.(heic|heif|jpg|jpeg)$/i, '.jpg'), {
     type: 'image/jpeg'
   });
 }
