@@ -20,8 +20,8 @@
 		"db:generate": "drizzle-kit generate",
 		"db:migrate": "drizzle-kit migrate",
 		"db:studio": "drizzle-kit studio",
-    "db:seed": "wrangler d1 execute curbalert-la-db --local --file=./scripts/seed-data.sql",
-    "db:seed:photos": "node scripts/generate-seed.mjs"
+		"db:seed": "wrangler d1 execute curbalert-la-db --local --file=./scripts/seed-data.sql",
+		"db:seed:photos": "node scripts/generate-seed.mjs"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^2.0.2",
@@ -60,6 +60,7 @@
 		"@tclohm/car-colors": "^1.0.3",
 		"@tclohm/iadb": "^1.0.8",
 		"@tclohm/us-states": "^1.0.4",
-		"better-sqlite3": "^12.6.2"
+		"better-sqlite3": "^12.6.2",
+		"heic2any": "^0.0.4"
 	}
 }
