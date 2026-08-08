@@ -54,6 +54,7 @@
         maxSizeKB, 
         maxWidth: 500, 
         quality: 0.8,
+        square: true,
       }); 
 
       // set preview 

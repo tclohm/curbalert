@@ -12,9 +12,10 @@ export async function compressImageToBase64(
     maxSizeKB?: number;
     maxWidth?: number;
     quality?: number;
+    square?: boolean;
   } = {}
 ): Promise<string> {
-  const { maxSizeKB = 150, maxWidth = 1280, quality = 0.75 } = options;
+  const { maxSizeKB = 150, maxWidth = 1280, quality = 0.75, square = false } = options;
 
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -23,27 +24,38 @@ export async function compressImageToBase64(
       const img = new Image();
 
       img.onload = () => {
-        // Calculate new dimensions (maintain aspect ratio)
-        let width = img.width;
-        let height = img.height;
-
-        if (width > maxWidth) {
-          height = (height * maxWidth) / width;
-          width = maxWidth;
-        }
-
         // Create canvas and draw resized image
         const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-
         const ctx = canvas.getContext('2d');
         if (!ctx) {
           reject(new Error('Failed to get canvas context'));
           return;
         }
 
-        ctx.drawImage(img, 0, 0, width, height);
+        if (square) {
+          // Crop to a centered square from the source image first 
+          const side = Math.min(img.width, img.height);
+          const sx = (img.width - side) / 2;
+          const sy = (img.height - side) / 2;
+
+          canvas.width = maxWidth;
+          canvas.height = maxWidth;
+
+          ctx.drawImage(img, sx, sy, side, side, 0, 0, maxWidth, maxWidth);
+        } else {
+          // resize by width, keep aspect ratio 
+          let width = img.width;
+          let height = img.height;
+
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width;
+            width = maxWidth;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          ctx.drawImage(img, 0, 0, width, height);
+        }
 
         // Try different quality levels until we're under size limit  
         let currentQuality = quality;
