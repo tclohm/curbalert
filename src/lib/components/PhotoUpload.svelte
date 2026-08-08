@@ -1,9 +1,10 @@
 <script lang="ts">
   import { compressImageToBase64, validateImageFile, getBase64Size, convertHeicIfNeeded } from '$lib/utils/imageCompression';
+	import { warn } from 'console';
   
   let {
     onPhotoCompressed = $bindable(),
-    maxSizeKB = 500
+    maxSizeKB = 150, 
   }: {
     onPhotoCompressed?: string | null;
     maxSizeKB?: number;
@@ -37,20 +38,19 @@
       return;
     }
     
-    // validate file 
+    // validate type/size 
     const validation = validateImageFile(file);
     if (!validation.valid) {
-      error = validation.error;
+      error = validation.error || null;
       isCompressing = false;
       return;
     }
 
     try {
-      // compress 
-      console.log('File before compression:', file.name, file.type, file.size);
+      // compress + resize, get base64 
       const base64 = await compressImageToBase64(file, {
         maxSizeKB, 
-        maxWidth: 1920, 
+        maxWidth: 500, 
         quality: 0.8,
       }); 
 
