@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { compressImageToBase64, validateImageFile, getBase64Size } from '$lib/utils/imageCompression';
+  import { compressImageToBase64, validateImageFile, getBase64Size, convertHeicIfNeeded } from '$lib/utils/imageCompression';
   
   let {
     onPhotoCompressed = $bindable(),
@@ -17,7 +17,7 @@
 
   async function handleFileSelect(event: Event) {
     const target = event.target as HTMLInputElement;
-    const file = target.files?.[0];
+    let file = target.files?.[0];
     if (!file) return;
 
     // reset state 
@@ -25,15 +25,25 @@
     compressionStats = null; 
     previewUrl = null;
     onPhotoCompressed = null;
+
+    isCompressing = true;
+
+    try {
+      // convert HEIC to JPEG first, before validation or compression touch it
+      file = await convertHeicIfNeeded(file);
+    } catch (e) {
+      error = 'Could not process this photo format. Try a different photo.';
+      isCompressing = false;
+      return;
+    }
     
     // validate file 
     const validation = validateImageFile(file);
     if (!validation.valid) {
       error = validation.error;
+      isCompressing = false;
       return;
     }
-
-    isCompressing = true;
 
     try {
       // compress 
