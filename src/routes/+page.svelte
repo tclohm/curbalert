@@ -338,9 +338,9 @@
 			<textarea
 				id="notes"
 				bind:value={formData.notes}
-				placeholder="Any additional details..."
+				placeholder="..."
 				rows="3"
-			/>
+			></textarea>
 		</section>
 
 		<!-- Email -->
