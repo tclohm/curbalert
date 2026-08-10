@@ -10,6 +10,7 @@ A community tool for reporting abandoned or illegally parked vehicles in Los Ang
 - **Report detail page** — full info on a single report (`/reports/[id]`), including how many times that plate has been reported overall and a total upvote count.
 - **Upvote / validate a report** — anyone viewing a report can upvote it to corroborate that it's accurate. A random anonymous token is generated and saved to `localStorage` on first upvote, so the same browser can't upvote a given report more than once (a soft, MVP-level limit — not real anti-abuse).
 - **Edit your reports** — after submitting, reporters get a unique edit link (`/edit/[token]`) tied to their email. That one link lists and lets them update every report they've filed — no account or password needed. If you're viewing a report's detail page and your saved edit token matches its reporter, an "Edit this report" button appears; otherwise it doesn't.
+- **Admin dashboard** (`/admin`) — password-protected. Admins can change a report's status, and can select 2+ rows and **merge** them as "the same vehicle" when reports for one real car have inconsistent details (wrong make/model, re-typed plate, etc). Merging never deletes data — it just links the rows with a `vehicle_group_id`, which shows as a "🔗 Same vehicle ×N" badge on both the admin and public dashboards. Any report can be un-merged ("Remove from group") at any time. See "Admin accounts" below to create a login.
 
 ## Tech stack
 
@@ -28,21 +29,63 @@ src/
     dashboard/                    # browse/search/filter all reports
     reports/[id]/                 # single report detail page + upvote button
     edit/[token]/                 # reporter's edit page for their own reports
+    admin/login/                  # admin sign-in form
+    admin/(protected)/            # admin dashboard, guarded by +layout.server.ts
     api/reports/                   # POST (create), GET (list/search)
-    api/reports/[id]/             # GET a single report (with counts + edit-access check)
+    api/reports/[id]/             # GET a single report; PATCH status (admin-only)
     api/reports/[id]/vote/        # POST an upvote for a report
     api/reports/edit/[token]/     # GET/PATCH reports for a given reporter token
+    api/admin/logout/             # POST to end the admin session
+    api/admin/groups/             # POST to merge 2+ reports into a "same vehicle" group
+    api/admin/groups/[groupId]/                        # GET a group's member reports
+    api/admin/groups/[groupId]/reports/[reportId]/     # DELETE to un-merge one report
   lib/
     components/                   # VehicleSelector, ColorSelector, PhotoUpload, SelectDropdown, Navbar
     server/db/                    # Drizzle schema + DB client
+    server/auth.ts                # PBKDF2 password hashing + session token helpers
     utils/imageCompression.ts     # client-side photo compression before upload
+hooks.server.ts                   # reads the admin session cookie on every request
 ```
 
 ### Database schema
 
-- **`reports`** — one row per submission: reporter email, plate/state, vehicle make/model/color, lat/lng + address, reason, notes, photo (base64), status, timestamps. Indexed on `(license_plate, plate_state)`.
+- **`reports`** — one row per submission: reporter email, plate/state, vehicle make/model/color, lat/lng + address, reason, notes, photo (base64), status, `vehicle_group_id`, timestamps. Indexed on `(license_plate, plate_state)` and on `vehicle_group_id`.
 - **`reporters`** — one row per unique email, holding the edit `token` used to authenticate that reporter's `/edit/[token]` page.
 - **`votes`** — one row per (report, anonymous voter token) upvote. A unique index on `(report_id, voter_token)` is what actually enforces one upvote per browser per report — not anything client-side.
+- **`admins`** — one row per admin login: email + PBKDF2 password hash.
+- **`admin_sessions`** — one row per active login. Only a SHA-256 hash of the session token is stored; the raw token lives solely in the browser's httpOnly cookie.
+- **`vehicle_groups`** — one row per admin-confirmed "these reports are the same car". Reports point at a group via `reports.vehicle_group_id`; deleting/un-merging just sets that back to `null`, nothing is ever hard-deleted from `reports`. A group is auto-removed once it has ≤1 member left. Note: SQLite can't attach a `REFERENCES` constraint via `ALTER TABLE ADD COLUMN`, so this foreign key is enforced by Drizzle/TypeScript, not the database itself — an existing SQLite limitation, not a bug.
+
+### ⚠️ Local dev has two separate databases — don't get burned by this
+
+`npm run db:push` (as configured in `drizzle.config.ts`) pushes your schema to whatever `DATABASE_URL` points at — by default, a plain `local.db` SQLite file. But `wrangler pages dev` / `wrangler d1 execute --local` (i.e. your actual running app locally) reads from a *different* SQLite file that Wrangler manages itself, under `.wrangler/state/v3/d1/miniflare-D1DatabaseObject/<hash>.sqlite`.
+
+Pushing a schema change to `local.db` does **not** affect the database your local app actually queries. If you add/change a table and your app doesn't seem to see it, this is almost always why.
+
+To push schema changes to the database your local app really uses:
+
+```bash
+find .wrangler -name "*.sqlite"   # find the real local D1 file
+DATABASE_URL="<paste that path>" npx drizzle-kit push
+```
+
+(TODO: consider just setting `DATABASE_URL` in `.env` to that `.wrangler` path permanently, so a plain `npm run db:push` always hits the right database. Not done yet since the filename is a generated hash that can change if `.wrangler/` is ever deleted/regenerated.)
+
+### Admin accounts
+
+There's no signup UI on purpose. Create an admin from the CLI, which prints a ready-to-run SQL statement:
+
+```bash
+node scripts/create-admin.mjs you@example.com "a strong password"
+
+# then run the printed command, e.g.:
+npx wrangler d1 execute curbalert-la-db --local  --command "INSERT INTO admins ..."   # local dev
+npx wrangler d1 execute curbalert-la-db --remote --command "INSERT INTO admins ..."   # production
+```
+
+`wrangler d1 execute --local` inserts into the *same* `.wrangler/state/...` database your local app actually reads from — no `DATABASE_URL` juggling needed for this step, unlike `db:push` (see the warning above). Just make sure you've pushed the `admins`/`admin_sessions`/`vehicle_groups` tables to that same `.wrangler` database first, or the insert will fail with "no such table."
+
+Then sign in at `/admin/login`. Sessions last 7 days; "Log out" on the admin dashboard clears both the cookie and the session row.
 
 ## Developing
 

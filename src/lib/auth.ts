@@ -22,16 +22,3 @@ async function hashPassword(pw) {
   );
   return `pbkdf2$${PBKDF2_ITERATIONS}$${toHex(salt)}$${toHex(new Uint8Array(bits))}`;
 }
-
-const id = crypto.randomUUID();
-const hash  = await hashPassword(password);
-const normalizedEmail = email.trim().toLowerCase();
-const now = Math.floor(Date.now() / 1000);
-
-const sql = `INSERT INTO admins (id, email, password_hash, created_at) VALUES ('${id}', '${normalizedEmail}', '${hash}', ${now});`;
-
-console.log('\nRun this against your D1 database:\n');
-console.log(sql);
-
-console.log('\nLocal:  npx wrangler d1 execute curbalert-la-db --local  --command "' + sql.replace(/"/g, '\\"') + '"');
-console.log('Remote: npx wrangler d1 execute curbalert-la-db --remote --command "' + sql.replace(/"/g, '\\"') + '"\n');
