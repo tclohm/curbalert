@@ -1,4 +1,5 @@
 import { webcrypto as crypto } from 'node:crypto';
+import { writeFileSync } from 'node:fs';
 
 const [, , email, password] = process.argv;
 
@@ -39,7 +40,9 @@ const now = Math.floor(Date.now() / 1000);
 
 const sql = `INSERT INTO admins (id, email, password_hash, created_at) VALUES ('${id}', '${normalizedEmail}', '${hash}', ${now});`;
 
-console.log('\nRun this against your D1 database:\n');
-console.log(sql);
+const outFile = 'scripts/.create-admin.sql';
+writeFileSync(outFile, sql);
 
-console.log('\nLocal:  npx wrangler d1 execute curbalert-la-db --local  --command "' + sql.replace(/"/g, '\\"') + '"');
+console.log(`\nWrote SQL to ${outFile}\n`);
+console.log(`Local: npx wrangler d1 execute curbalert-la-db --local --file=${outFile}`);
+// console.log(`Remote: npx wrangler d1 execute curbalert-la-db --remote --file=${outFile}\n`);

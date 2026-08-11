@@ -27,3 +27,6 @@ test-results
 /worker-configuration.d.ts
 # SQLite
 *.db
+
+# secrets
+scripts/.create-admin.sql
