@@ -73,17 +73,22 @@ DATABASE_URL="<paste that path>" npx drizzle-kit push
 
 ### Admin accounts
 
-There's no signup UI on purpose. Create an admin from the CLI, which prints a ready-to-run SQL statement:
+There's no signup UI on purpose. Create an admin from the CLI:
 
 ```bash
 node scripts/create-admin.mjs you@example.com "a strong password"
-
-# then run the printed command, e.g.:
-npx wrangler d1 execute curbalert-la-db --local  --command "INSERT INTO admins ..."   # local dev
-npx wrangler d1 execute curbalert-la-db --remote --command "INSERT INTO admins ..."   # production
 ```
 
-`wrangler d1 execute --local` inserts into the *same* `.wrangler/state/...` database your local app actually reads from — no `DATABASE_URL` juggling needed for this step, unlike `db:push` (see the warning above). Just make sure you've pushed the `admins`/`admin_sessions`/`vehicle_groups` tables to that same `.wrangler` database first, or the insert will fail with "no such table."
+This writes the SQL to `scripts/.create-admin.sql` (gitignored — it briefly contains a real password hash) and prints two ready-to-run commands:
+
+```bash
+npx wrangler d1 execute curbalert-la-db --local  --file=scripts/.create-admin.sql   # local dev
+npx wrangler d1 execute curbalert-la-db --remote --file=scripts/.create-admin.sql   # production
+```
+
+**Why a file and not `--command`:** the script used to print a raw `--command "INSERT INTO admins ... VALUES ('pbkdf2$100000$...')..."` string to copy/paste. Don't do that — inside double quotes, most shells (bash, zsh) treat `$` followed by digits as variable/positional-parameter expansion (`$1`, `$100000`, etc.), which silently strips those chunks out *before wrangler ever sees them*. Since a PBKDF2 hash string is full of `$` separators, this corrupted the stored hash and produced a very confusing "invalid email or password" on every login attempt, with no error anywhere. Writing to a `.sql` file and reading it with `--file=` sidesteps the shell entirely — same pattern the existing `db:seed` script already uses.
+
+`wrangler d1 execute --local` reads/writes the *same* `.wrangler/state/...` database your local app actually reads from — no `DATABASE_URL` juggling needed for this step, unlike `db:push` (see the warning above). Just make sure you've pushed the `admins`/`admin_sessions`/`vehicle_groups` tables to that same `.wrangler` database first, or the insert will fail with "no such table."
 
 Then sign in at `/admin/login`. Sessions last 7 days; "Log out" on the admin dashboard clears both the cookie and the session row.
 
