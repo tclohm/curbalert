@@ -58,5 +58,14 @@ export async function verifyPassword(password: string, stored: string): Promise<
   const expected = fromHex(hashHex);
   const actual = await pbkdf2(password, salt, iterations);
 
+  return timingSafeEqual(actual, expected);
+}
 
+export async function sha256Hex(input: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(input));
+  return toHex(new Uint8Array(digest));
+}
+
+export function generateSessionToken(): string {
+  return toHex(crypto.getRandomValues(new Uint8Array(SESSION_TOKEN_BYTES)));
 }
