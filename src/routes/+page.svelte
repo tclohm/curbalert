@@ -1,5 +1,7 @@
 <script lang="ts">
   import { getAll } from '@tclohm/us-states';
+
+  import { goto } from '$app/navigation';
   
 	import PhotoUpload from '$lib/components/PhotoUpload.svelte';
 	import VehicleSelector from '$lib/components/VehicleSelector.svelte';
@@ -25,7 +27,6 @@
   let selectedColor = $state('');
 	let isSubmitting = $state(false);
 	let submitError = $state<string | null>(null);
-	let submitSuccess = $state(false);
   let isGettingLocation = $state(false);
 
 	let formData = $state({
@@ -39,8 +40,6 @@
     latitude: null as number | null,
     longitude: null as number | null
 	});
-
-  let editUrl = $state<string | null>(null);
 
   // helper 
   function base64ToFile(base64: string, filename = 'plate.jpg'): File {
@@ -107,7 +106,6 @@
 	async function handleSubmit(event: Event) {
 		event.preventDefault();
 		submitError = null;
-		submitSuccess = false;
 
 		if (!photoBase64) {
 			submitError = 'Please upload a photo';
@@ -150,26 +148,10 @@
 				throw new Error(result.error || 'Failed to submit report');
 			}
 
-			submitSuccess = true;
-      editUrl = result.editUrl;
       localStorage.setItem('editUrl', result.editUrl);
 
-			// Reset form
-			formData = {
-				reporterEmail: '',
-				licensePlate: '',
-				plateState: 'CA',
-				vehicleColor: '',
-				reason: '72_hours',
-				notes: '',
-        address: '',
-        latitude: null,
-        longitude: null
-			};
-			photoBase64 = null;
-			selectedMake = '';
-			selectedModel = ''; 
-      selectedColor = '';
+      await goto(`/reports/${result.id}`);
+
 		} catch (error) {
 			submitError = error instanceof Error ? error.message : 'Failed to submit report';
 		} finally {
@@ -219,19 +201,6 @@
 <div class="container">
 	<h1>Report Abandoned Vehicle</h1>
 	<p class="subtitle">Help keep Los Angeles streets clean and safe</p>
-
-	{#if submitSuccess}
-		<div class="success-message">
-			✅ Report submitted successfully! Thank you for helping keep LA clean.
-      {#if editUrl}
-        <p>Save this link to edit your report later:</p>
-        <a href={editUrl}>{location.origin}{editUrl}</a>
-        <button type="button" onclick={() => navigator.clipboard.writeText((location.origin + editUrl))}>
-          Copy link 
-        </button>
-      {/if}
-		</div>
-	{/if}
 
 	{#if submitError}
 		<div class="error-message">
