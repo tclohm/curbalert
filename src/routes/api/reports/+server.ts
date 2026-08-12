@@ -4,7 +4,10 @@ import { drizzle } from 'drizzle-orm/d1';
 import { reports, reporters } from '$lib/server/db/schema';
 import { eq, and, or, like, gt, sql, desc } from 'drizzle-orm';
 
-export const GET: RequestHandler = async ({ platform, url }) => {
+export const GET: RequestHandler = async ({ platform, url, locals }) => {
+  if (!locals.admin) {
+    return json({ error: 'Unauthorized' }, { status: 401 });
+  }
 	try {
 		const db = drizzle(platform?.env?.DB);
     const page = Number(url.searchParams.get('page') ?? '1');
